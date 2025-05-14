@@ -4,6 +4,7 @@ const cors =require('cors');
 const dotenv = require('dotenv');
 dotenv.config(); // Load environment variables from .env file
 
+
 const app = express();
 const PORT= process.env.PORT || 5000;
 
@@ -14,7 +15,7 @@ app.use(express.json());
 
 
 //connect to MongoDB
-mongoose.connect(process.env.MONGO_URL,{
+mongoose.connect(process.env.MONGO_URI,{
     useNewUrlParser:true,
     useUNifiedTopology: true,
 })
