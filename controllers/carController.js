@@ -77,20 +77,38 @@ exports.updateCar = async (req, res) => {
     }
 };
 
+
+
 exports.deleteCar = async (req, res) => {
-  try {
-    const car = await Car.findById(req.params.id);
-    if (!car) return res.status(404).json({ message: 'Car not found' });
+    try {
+        const car = await Car.findById(req.params.id);
+        if (!car) return res.status(404).json({ message: 'Car not found' });
 
-    if (car.availabilityStatus === 'Rented') {
-      return res.status(400).json({ message: 'Cannot delete a car that is currently rented.' });
+        if (car.availabilityStatus?.toLowerCase() === 'rented') {
+            return res.status(400).json({ message: 'Cannot delete a car that is currently rented.' });
+        }
+
+        // Delete associated images
+        car.carPhotos?.forEach(photoUrl => {
+            const filename = photoUrl.split('/uploads/cars/')[1];
+            if (!filename) {
+                console.error('Filename extraction failed:', photoUrl);
+            } else {
+                const filePath = path.join(__dirname, '..', 'uploads', 'cars', filename);
+                if (fs.existsSync(filePath)) {
+                    fs.unlink(filePath, err => {
+                        if (err) console.error('Failed to delete image:', filePath);
+                    });
+                } else {
+                    console.error('File does not exist:', filePath);
+                }
+            }
+        });
+
+        await car.deleteOne();
+        res.status(200).json({ message: 'Car deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-
-    await car.deleteOne(); // or Car.findByIdAndDelete(req.params.id);
-    res.status(200).json({ message: 'Car deleted successfully' });
-
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
 };
 
