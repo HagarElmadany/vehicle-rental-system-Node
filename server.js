@@ -1,4 +1,5 @@
 const express =require('express');
+const path = require('path');
 const mongoose =require('mongoose');
 const cors =require('cors');
 const dotenv = require('dotenv');
@@ -14,7 +15,7 @@ const PORT= process.env.PORT || 5000;
 //Middleware
 app.use(cors());
 app.use(express.json());
-
+app.use('/uploads/cars', express.static(path.join(__dirname, 'uploads/cars')));
 
 //connect to MongoDB
 mongoose.connect(process.env.MONGO_URI,{
