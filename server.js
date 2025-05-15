@@ -26,6 +26,7 @@ mongoose.connect(process.env.MONGO_URI,{
 .catch((err)=> {console.error('MongoDB connection error:', err)});
 
 
+
 //routes
 app.get('/', (req, res) => {
     res.send('server is working');
@@ -33,6 +34,19 @@ app.get('/', (req, res) => {
 
 // cars Routes
 app.use('/api/cars', carRoutes);
+
+
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.log(err);
+
+    res.status(err.statusCode || 500).send({
+        statusCode: err.statusCode || 500,
+        message: err.message || 'Something went wrong!',
+        errors: []
+    })
+});
 
 // Start Server
 app.listen(PORT, () => {
