@@ -14,7 +14,13 @@ exports.getAllCars = async (req, res) => {
 
 // Get a single car by ID
 exports.getCarById = async (req, res) => {
-    res.send('getCarById');
+    try {
+    const car = await Car.findById(req.params.id).populate('exhibition');;
+    if (!car) return res.status(404).json({ message: 'Car not found' });
+    res.status(200).json(car);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 exports.createCar = async (req, res) => {
