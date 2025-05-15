@@ -2,6 +2,8 @@ const express =require('express');
 const mongoose =require('mongoose');
 const cors =require('cors');
 const dotenv = require('dotenv');
+const carRoutes = require('./routes/carRoutes');
+
 dotenv.config(); // Load environment variables from .env file
 
 
@@ -27,6 +29,9 @@ mongoose.connect(process.env.MONGO_URI,{
 app.get('/', (req, res) => {
     res.send('server is working');
 })
+
+// cars Routes
+app.use('/api/cars', carRoutes);
 
 // Start Server
 app.listen(PORT, () => {
