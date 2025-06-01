@@ -4,14 +4,19 @@ const path = require('path');
 // Storage config with dynamic destination
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    if (file.fieldname === 'license') {
-      cb(null, 'uploads/licenses/');
-    } else if (file.fieldname === 'carImage') {
-      cb(null, 'uploads/cars/');
-    } else {
-      cb(null, 'uploads/others/');
-    }
+  let folder = 'uploads/others'; // default fallback
+
+  if (file.fieldname === 'driver_license') {
+    folder = 'uploads/driver_licenses';
+  } else if (file.fieldname === 'ID_document') {
+    folder = 'uploads/id_documents';
+  } else if (file.fieldname === 'carImage') {
+    folder = 'uploads/cars';
+  }
+
+  cb(null, folder);
   },
+
   filename: function (req, file, cb) {
     const filename = file.originalname.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.-]/g, '');
     const uniqueName = `${Date.now()}-${filename}`;

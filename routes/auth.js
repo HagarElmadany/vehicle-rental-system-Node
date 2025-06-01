@@ -2,16 +2,27 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Client = require('../models/Client');
+const Agent = require('../models/Agent');
 const upload = require('../middleware/upload');  // Multer middleware
 require('dotenv').config();
 
 const router = express.Router();
 
-router.post('/register', upload.single('licenseImage'), async (req, res) => {
+const registerUser = async (req, res, role) => {
   try {
-     console.log('File:', req.file);
-    const { name, email, password, phone, location } = req.body;
-    const licenseImage = req.file ? req.file.path : undefined;
+    const {
+      email,
+      password,
+      phone_number,
+      location,
+      first_name,
+      last_name,
+      company_name,
+      opening_hours,
+      lat,
+      lng
+    } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ error: 'Email already exists' });
@@ -19,19 +30,44 @@ router.post('/register', upload.single('licenseImage'), async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const newUser = new User({
-      name,
+    // Step 1: Create base user
+    const user = new User({
       email,
       password: hashedPassword,
-      phone,
-      location,
-      licenseImage
+      role,
     });
+    await user.save();
 
-    await newUser.save();
+    // Step 2: Create role-specific profile
+    let profile = null;
+    if (role === 'client') {
+      profile = new Client({
+        user_id: user._id,
+        first_name,
+        last_name,
+        phone_number,
+        location,
+        driver_license: req.file?.path,
+        lat,
+        lng
+      });
+    } else if (role === 'agent') {
+      profile = new Agent({
+        user_id: user._id,
+        company_name,
+        phone_number,
+        location,
+        ID_document: req.file?.path,
+        lat,
+        lng,
+        opening_hours
+      });
+    }
+
+    if (profile) await profile.save();
 
     const token = jwt.sign(
-      { userId: newUser._id, role: newUser.role },
+      { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '1d' }
     );
@@ -39,20 +75,22 @@ router.post('/register', upload.single('licenseImage'), async (req, res) => {
     res.status(201).json({
       token,
       user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        licenseImage: newUser.licenseImage
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        profileId: profile?._id
       }
     });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
   }
-});
+};
 
-module.exports = router;
+
+router.post('/register/client', upload.single('driver_license'), (req, res) => registerUser(req, res, 'client'));
+router.post('/register/agent', upload.single('ID_document'), (req, res) => registerUser(req, res, 'agent'));
 
 
 // POST /api/auth/login
