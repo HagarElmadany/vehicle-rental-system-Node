@@ -1,11 +1,11 @@
 const Car = require('../models/Car');
-const Exhibition = require('../models/Exhibition');
 const fs = require('fs');
 const path = require('path');
 
+// Get all cars
 exports.getAllCars = async (req, res) => {
     try {
-        const cars = await Car.find().populate('exhibition');
+        const cars = await Car.find().populate('agent');
         res.status(200).json(cars);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -15,7 +15,7 @@ exports.getAllCars = async (req, res) => {
 // Get a single car by ID
 exports.getCarById = async (req, res) => {
     try {
-        const car = await Car.findById(req.params.id).populate('exhibition');
+        const car = await Car.findById(req.params.id).populate('agent');
         if (!car) return res.status(404).json({ message: 'Car not found' });
         res.status(200).json(car);
     } catch (error) {
@@ -23,11 +23,35 @@ exports.getCarById = async (req, res) => {
     }
 };
 
+// Create a car
 exports.createCar = async (req, res) => {
     try {
         const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const carPhotos = req.files?.map(file => `${baseUrl}/uploads/cars/${file.filename}`) || [];
-        const carData = { ...req.body, carPhotos };
+        const carPhotos = [];
+        const documents = [];
+
+        if (req.files && Object.keys(req.files).length > 0) {
+            if (req.files.carPhotos) {
+                req.files.carPhotos.forEach(file => {
+                    carPhotos.push(`${baseUrl}/uploads/cars/${file.filename}`);
+                });
+            }
+
+            if (req.files.documents) {
+                req.files.documents.forEach(file => {
+                    documents.push(`${baseUrl}/uploads/documents/${file.filename}`);
+                });
+            }
+        }
+
+        const carData = {
+            ...req.body,
+            carPhotos,
+            documents,
+            is_approved: req.body.is_approved ?? false,
+            with_driver: req.body.with_driver ?? false
+        };
+
         const car = new Car(carData);
         await car.save();
         res.status(201).json(car);
@@ -36,39 +60,64 @@ exports.createCar = async (req, res) => {
     }
 };
 
+// Update a car
 exports.updateCar = async (req, res) => {
     try {
         const car = await Car.findById(req.params.id);
         if (!car) return res.status(404).json({ message: 'Car not found' });
 
-        // Delete old images if new ones are uploaded
-        if (req.files?.length > 0 && car.carPhotos?.length > 0) {
-            car.carPhotos.forEach(photoUrl => {
-                const filename = photoUrl.split('/uploads/cars/')[1];
-                if (!filename) {
-                    console.error('Filename extraction failed:', photoUrl);
-                } else {
-                    const filePath = path.join(__dirname, '..', 'uploads', 'cars', filename);
-                    if (fs.existsSync(filePath)) {
-                        fs.unlink(filePath, err => {
-                            if (err) console.error('Failed to delete old image:', filePath);
-                        });
-                    } else {
-                        console.error('File does not exist:', filePath);
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const carPhotos = [];
+        const documents = [];
+
+        // Handle new uploaded files
+        if (req.files && Object.keys(req.files).length > 0) {
+            if (req.files.carPhotos && car.carPhotos?.length > 0) {
+                car.carPhotos.forEach(photoUrl => {
+                    const filename = photoUrl.split('/uploads/cars/')[1];
+                    if (filename) {
+                        const filePath = path.join(__dirname, '..', 'uploads', 'cars', filename);
+                        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
                     }
-                }
-            });
+                });
+            }
+
+            if (req.files.documents && car.documents?.length > 0) {
+                car.documents.forEach(docUrl => {
+                    const filename = docUrl.split('/uploads/documents/')[1];
+                    if (filename) {
+                        const filePath = path.join(__dirname, '..', 'uploads', 'documents', filename);
+                        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                    }
+                });
+            }
+
+            // Add new files
+            if (req.files.carPhotos) {
+                req.files.carPhotos.forEach(file => {
+                    carPhotos.push(`${baseUrl}/uploads/cars/${file.filename}`);
+                });
+            }
+
+            if (req.files.documents) {
+                req.files.documents.forEach(file => {
+                    documents.push(`${baseUrl}/uploads/documents/${file.filename}`);
+                });
+            }
         }
 
-        // Continue as usual
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const carPhotos = req.files?.map(file => `${baseUrl}/uploads/cars/${file.filename}`);
-        const updatedData = { ...req.body };
-        if (carPhotos?.length > 0) updatedData.carPhotos = carPhotos;
+        const updatedData = {
+            ...req.body,
+        };
+
+        if (carPhotos.length > 0) updatedData.carPhotos = carPhotos;
+        if (documents.length > 0) updatedData.documents = documents;
+        if (req.body.is_approved !== undefined) updatedData.is_approved = req.body.is_approved;
+        if (req.body.with_driver !== undefined) updatedData.with_driver = req.body.with_driver;
 
         const updatedCar = await Car.findByIdAndUpdate(req.params.id, updatedData, {
             new: true,
-            runValidators: true,
+            runValidators: true
         });
 
         res.status(200).json(updatedCar);
@@ -77,8 +126,7 @@ exports.updateCar = async (req, res) => {
     }
 };
 
-
-
+// Delete a car
 exports.deleteCar = async (req, res) => {
     try {
         const car = await Car.findById(req.params.id);
@@ -88,19 +136,28 @@ exports.deleteCar = async (req, res) => {
             return res.status(400).json({ message: 'Cannot delete a car that is currently rented.' });
         }
 
-        // Delete associated images
+        // Delete car photos
         car.carPhotos?.forEach(photoUrl => {
             const filename = photoUrl.split('/uploads/cars/')[1];
-            if (!filename) {
-                console.error('Filename extraction failed:', photoUrl);
-            } else {
+            if (filename) {
                 const filePath = path.join(__dirname, '..', 'uploads', 'cars', filename);
                 if (fs.existsSync(filePath)) {
                     fs.unlink(filePath, err => {
-                        if (err) console.error('Failed to delete image:', filePath);
+                        if (err) console.error('Failed to delete car photo:', filePath);
                     });
-                } else {
-                    console.error('File does not exist:', filePath);
+                }
+            }
+        });
+
+        // Delete document images
+        car.documents?.forEach(docUrl => {
+            const filename = docUrl.split('/uploads/documents/')[1];
+            if (filename) {
+                const filePath = path.join(__dirname, '..', 'uploads', 'documents', filename);
+                if (fs.existsSync(filePath)) {
+                    fs.unlink(filePath, err => {
+                        if (err) console.error('Failed to delete document:', filePath);
+                    });
                 }
             }
         });
