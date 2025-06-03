@@ -6,8 +6,14 @@ const upload = require('../middleware/upload');
 // Public routes
 router.get('/', carController.getAllCars);
 router.get('/:id', carController.getCarById);
-router.post('/', upload.array('carPhotos', 5), carController.createCar); // max 5 images
-router.put('/:id', upload.array('carPhotos', 5), carController.updateCar);
+router.post('/', upload.fields([
+    { name: 'carPhotos', maxCount: 5 },
+    { name: 'documents', maxCount: 5 }
+]), carController.createCar); // max 5 images
+router.put('/:id', upload.fields([
+    { name: 'carPhotos', maxCount: 5 },
+    { name: 'documents', maxCount: 5 }
+]), carController.updateCar);
 router.delete('/:id', carController.deleteCar);
 
 module.exports = router;
