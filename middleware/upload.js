@@ -1,12 +1,22 @@
-
 const multer = require('multer');
 const path = require('path');
 
-// Storage config
+// Storage config with dynamic destination
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/cars/');
+  let folder = 'uploads/others'; // default fallback
+
+  if (file.fieldname === 'driver_license') {
+    folder = 'uploads/driver_licenses';
+  } else if (file.fieldname === 'ID_document') {
+    folder = 'uploads/id_documents';
+  } else if (file.fieldname === 'carImage') {
+    folder = 'uploads/cars';
+  }
+
+  cb(null, folder);
   },
+
   filename: function (req, file, cb) {
     const filename = file.originalname.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.-]/g, '');
     const uniqueName = `${Date.now()}-${filename}`;
@@ -14,7 +24,7 @@ const storage = multer.diskStorage({
   }
 });
 
-// File filter (optional)
+// File filter
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|webp/;
   const ext = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -26,7 +36,6 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Multer instance
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
