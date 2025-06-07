@@ -6,6 +6,9 @@ const User = require('../models/User');
 const Client = require('../models/Client');
 const Agent = require('../models/Agent');
 const upload = require('../middleware/upload');  // Multer middleware
+
+const passport = require('passport');
+
 require('dotenv').config();
 
 const router = express.Router();
@@ -159,8 +162,8 @@ router.post('/forgot-password', async (req, res) => {
       { expiresIn: '15m' }
     );
 
-    const resetLink = `http://localhost:3000/reset-password/${token}`; // must adjust to our frontend URL /**************************/
-
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+    
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -187,7 +190,7 @@ router.post('/forgot-password', async (req, res) => {
 });
 
 
-//POST /reset-password Reseting assword
+//POST /reset-password Reseting password
 router.post('/reset-password/:token', async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
@@ -213,6 +216,106 @@ router.post('/reset-password/:token', async (req, res) => {
     res.status(400).json({ error: "Invalid or expired token" });
   }
 });
+
+
+
+//google 0auth2
+router.get('/google', (req, res, next) => {
+  const role = req.query.role; // 'client' or 'agent'
+  const state = JSON.stringify({ role });
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    state
+  })(req, res, next);
+});
+
+router.get('/google/callback', passport.authenticate('google', {
+  failureRedirect: '/login'
+}), (req, res) => {
+  const user = req.user;
+  const token = jwt.sign(
+    { userId: user._id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: '1d' }
+  );
+
+  res.redirect(`http://localhost:4200/complete-profile?token=${token}`);
+});
+
+
+const verifyToken = require('../middleware/verifyToken');
+
+router.post('/google/complete-profile', verifyToken, upload.single('driver_license'), async (req, res) => {
+  console.log('Google complete profile request:', req.body);
+  try {
+    const userId = req.user.userId;
+    const {
+      phone_number,
+      location,
+      lat,
+      lng,
+      company_name,
+      opening_hours
+    } = req.body;
+
+  role = req.user.role;
+
+
+
+  if (!role || !phone_number || !location) {
+
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    let profile;
+
+    if (role === 'client') {
+
+      const client = await Client.findOne({ user_id: userId });
+      console.log('User:', client);
+
+      const first_name = client.first_name;
+      const last_name = client.last_name;
+
+      client.phone_number = phone_number;
+      client.location = location;
+      client.driver_license = req.file?.path || client.driver_license;  
+      client.lat = lat;
+      client.lng = lng;
+      await client.save();
+
+    } else if (role === 'agent') {
+      profile = new Agent({
+        user_id: userId,
+        company_name,
+        phone_number,
+        location,
+        ID_document: req.file?.path,
+        lat,
+        lng,
+        opening_hours
+      });
+    }
+
+    if (profile) await profile.save();
+
+    const newToken = jwt.sign(
+      { userId: req.user.userId, role: req.user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    res.status(201).json({ 
+      message: 'Profile completed successfully',
+      token: newToken 
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
 
 module.exports = router;
