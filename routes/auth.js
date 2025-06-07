@@ -231,15 +231,37 @@ router.get('/google', (req, res, next) => {
 
 router.get('/google/callback', passport.authenticate('google', {
   failureRedirect: '/login'
-}), (req, res) => {
-  const user = req.user;
-  const token = jwt.sign(
-    { userId: user._id, role: user.role },
-    process.env.JWT_SECRET,
-    { expiresIn: '1d' }
-  );
+}), async (req, res) => {
+   try {
+    const user = req.user;
+    console.log('Google callback user:', user);
 
-  res.redirect(`http://localhost:4200/complete-profile?token=${token}`);
+    let isProfileComplete = false;
+
+    if (user.role === 'client') {
+      const client = await Client.findOne({ user_id: user._id });
+      isProfileComplete = client && client.phone_number && client.location;
+    } else if (user.role === 'agent') {
+      const agent = await Agent.findOne({ user_id: user._id });
+      isProfileComplete = agent && agent.phone_number && agent.location && agent.opening_hours;
+    }
+
+
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    if (isProfileComplete) {
+      return res.redirect(`http://localhost:4200/home?token=${token}`);
+    } else {
+      return res.redirect(`http://localhost:4200/complete-profile?token=${token}`);
+    }
+  } catch (error) {
+    console.error('Google callback error:', error);
+    res.redirect('http://localhost:4200/login');
+  }
 });
 
 
