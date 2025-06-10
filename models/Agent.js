@@ -18,7 +18,8 @@ const agentSchema = new mongoose.Schema({
   permissions: {
     type: [String],
     default: ['manage_vehicles', 'view_bookings']
-  }
+  },
+  suspended_until: { type: Date, default: null }
 });
 
 module.exports = mongoose.model('Agent', agentSchema);

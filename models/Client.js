@@ -14,7 +14,9 @@ const clientSchema = new mongoose.Schema({
     enum: ['approved', 'pending', 'banned','rejected','suspended'],
     default: 'pending'
   },
-  wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Car' }]
+  wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Car' }],
+  suspended_until: { type: Date, default: null }
+
 });
 
 module.exports = mongoose.model('Client', clientSchema);

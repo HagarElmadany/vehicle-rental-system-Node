@@ -5,6 +5,7 @@ const authRoutes = require('./routes/auth');
 const carRoutes = require('./routes/carRoutes');
 const path = require('path');
 const cors = require('cors');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -48,6 +49,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/cars', carRoutes);
+app.use('/api/admin',adminRoutes );
 
 // Error handling middleware
 app.use((err, req, res, next) => {
