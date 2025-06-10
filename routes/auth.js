@@ -340,4 +340,34 @@ router.post('/google/complete-profile', verifyToken, upload.single('driver_licen
 
 
 
+
+router.get('/client/profile', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const role = req.user.role;
+
+    if (role !== 'client') {
+      return res.status(403).json({ error: 'Access denied: Not a client' });
+    }
+
+    const user = await User.findById(userId).select('-password');
+    const clientProfile = await Client.findOne({ user_id: userId });
+
+    if (!clientProfile) {
+      return res.status(404).json({ error: 'Client profile not found' });
+    }
+
+    res.status(200).json({
+      user,
+      profile: clientProfile
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
+
 module.exports = router;
