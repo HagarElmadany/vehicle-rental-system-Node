@@ -4,8 +4,8 @@ const clientSchema = new mongoose.Schema({
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   first_name: { type: String, required: true, maxlength: 100 },
   last_name: { type: String, required: true,  maxlength: 100 },
-  phone_number: { type: String, required: true, maxlength: 15 },
-  location: { type: String, required: true, maxlength: 100 },
+  phone_number: { type: String, required: false, maxlength: 15 },
+  location: { type: String, required: false, maxlength: 100 },
   lat: { type: Number},
   lng: { type: Number},
   driver_license: { type: String, maxlength: 255 },
@@ -14,7 +14,9 @@ const clientSchema = new mongoose.Schema({
     enum: ['approved', 'pending', 'banned','rejected','suspended'],
     default: 'pending'
   },
-  wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Car' }]
+  wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Car' }],
+  suspended_until: { type: Date, default: null }
+
 });
 
 module.exports = mongoose.model('Client', clientSchema);

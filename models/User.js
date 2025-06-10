@@ -11,13 +11,27 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: [true, 'Password is required'],
+        //required: [true, 'Password is required'],
+        password: {
+            type: String,
+            required: false  // allow null for Google signups
+        },
+        googleId: {
+            type: String,
+            required: false
+        },
+
         minlength: [6, 'Password must be at least 6 characters']
     },
     role: { type: String, enum: ['admin', 'agent', 'client'], default: 'client', required: true },
+    banned: { type: Boolean, default: false }
+
 },
 {
     timestamps: true,
 });
+
+
+
 
 module.exports = mongoose.model('User', userSchema);
