@@ -71,7 +71,6 @@ const registerUser = async (req, res, role) => {
     });
 
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 };
@@ -210,7 +209,6 @@ const getClientProfile = async (req, res) => {
 const googleCallback = async (req, res) => {
   try {
     const user = req.user;
-    console.log('Google callback user:', user);
 
     let isProfileComplete = false;
 
@@ -234,13 +232,12 @@ const googleCallback = async (req, res) => {
       return res.redirect(`http://localhost:4200/complete-profile?token=${token}`);
     }
   } catch (error) {
-    console.error('Google callback error:', error);
     res.redirect('http://localhost:4200/login');
   }
 };
 
 const completeGoogleProfile = async (req, res) => {
-  console.log('Google complete profile request:', req.body);
+  
   try {
     const userId = req.user.userId;
     const role = req.user.role;
@@ -298,7 +295,6 @@ const completeGoogleProfile = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
     res.status(500).json({ error: 'Server error' });
   }
 };
