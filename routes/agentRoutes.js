@@ -3,8 +3,10 @@ const router = express.Router();
 const agentController = require('../controllers/agentController');
 const upload = require('../middleware/upload');
 const agentAuth = require('../middleware/agentAuth');
+const ensureApprovedAgent = require('../middleware/ensureApprovedAgent');
 
 router.use(agentAuth);
+router.use(ensureApprovedAgent);
 
 router.get('/cars', agentController.getAllCars);
 router.get('/cars/:id', agentController.getCarById);

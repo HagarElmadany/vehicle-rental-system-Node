@@ -50,6 +50,7 @@ async function auth(req, res, next) {
       }
       // add the agent ID to the request object
       req.user.id = agent._id;
+      req.user.verification_status = agent.verification_status;
     }
 
     next();
