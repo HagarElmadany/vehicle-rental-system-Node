@@ -207,15 +207,19 @@ const getClientProfile = async (req, res) => {
   }
 };
 
-const googleOAuthLogin = async (req, res) => {
+const googleCallback = async (req, res) => {
   try {
-    const { email } = req.body;
+    const user = req.user;
+    console.log('Google callback user:', user);
 
-    let user = await User.findOne({ email });
+    let isProfileComplete = false;
 
-    if (!user) {
-      user = new User({ email, role: 'client', verified: true });
-      await user.save();
+    if (user.role === 'client') {
+      const client = await Client.findOne({ user_id: user._id });
+      isProfileComplete = client && client.phone_number && client.location;
+    } else if (user.role === 'agent') {
+      const agent = await Agent.findOne({ user_id: user._id });
+      isProfileComplete = agent && agent.phone_number && agent.location && agent.opening_hours;
     }
 
     const token = jwt.sign(
@@ -224,62 +228,88 @@ const googleOAuthLogin = async (req, res) => {
       { expiresIn: '1d' }
     );
 
-    res.status(200).json({
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        verified: user.verified
-      }
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    if (isProfileComplete) {
+      return res.redirect(`http://localhost:4200/home?token=${token}`);
+    } else {
+      return res.redirect(`http://localhost:4200/complete-profile?token=${token}`);
+    }
+  } catch (error) {
+    console.error('Google callback error:', error);
+    res.redirect('http://localhost:4200/login');
   }
 };
 
 const completeGoogleProfile = async (req, res) => {
+  console.log('Google complete profile request:', req.body);
   try {
     const userId = req.user.userId;
+    const role = req.user.role;
+
     const {
-      first_name,
-      last_name,
       phone_number,
       location,
       lat,
-      lng
+      lng,
+      company_name,
+      opening_hours
     } = req.body;
 
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!role || !phone_number || !location) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
 
-    const clientProfile = new Client({
-      user_id: userId,
-      first_name,
-      last_name,
-      phone_number,
-      location,
-      lat,
-      lng
+    let profile;
+
+    if (role === 'client') {
+      const client = await Client.findOne({ user_id: userId });
+      if (!client) return res.status(404).json({ error: 'Client not found' });
+
+      client.phone_number = phone_number;
+      client.location = location;
+      client.driver_license = req.file?.path || client.driver_license;
+      client.lat = lat;
+      client.lng = lng;
+
+      await client.save();
+    } else if (role === 'agent') {
+      profile = new Agent({
+        user_id: userId,
+        company_name,
+        phone_number,
+        location,
+        ID_document: req.file?.path,
+        lat,
+        lng,
+        opening_hours
+      });
+    }
+
+    if (profile) await profile.save();
+
+    const newToken = jwt.sign(
+      { userId, role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    res.status(201).json({
+      message: 'Profile completed successfully',
+      token: newToken
     });
 
-    await clientProfile.save();
-
-    res.status(200).json({ message: 'Profile completed successfully', profile: clientProfile });
-
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Server error' });
   }
 };
+
 module.exports = {
   registerUser,
   login,
   forgotPassword,
   resetPassword,
   getClientProfile,
-  googleOAuthLogin,
+  googleCallback,
   completeGoogleProfile
+ 
 };
