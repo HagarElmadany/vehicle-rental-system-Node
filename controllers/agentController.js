@@ -26,6 +26,9 @@ exports.getCarById = async (req, res) => {
 // Create a car for the logged-in agent
 exports.createCar = async (req, res) => {
   try {
+    // Prevent agent from setting approval_status
+    delete req.body.approval_status;
+
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const carPhotos = [];
     const documents = [];
@@ -49,7 +52,6 @@ exports.createCar = async (req, res) => {
       agent: req.user.id,
       carPhotos,
       documents,
-      is_approved: req.body.is_approved ?? false,
       with_driver: req.body.with_driver ?? false
     };
 
@@ -66,6 +68,9 @@ exports.updateCar = async (req, res) => {
   try {
     const car = await Car.findOne({ _id: req.params.id, agent: req.user.id });
     if (!car) return res.status(404).json({ message: 'Car not found or access denied' });
+
+    // Prevent agent from modifying approval_status
+    delete req.body.approval_status;
 
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const carPhotos = [];

@@ -3,7 +3,7 @@ const router = express.Router();
 const carController = require('../controllers/carController');
 const upload = require('../middleware/upload');
 
-// Public routes
+// Public routes // all cars with no access
 router.get('/', carController.getAllCars);
 router.get('/:id', carController.getCarById);
 router.post('/', upload.fields([
