@@ -5,7 +5,7 @@ const path = require('path');
 // Get all cars owned by agent
 exports.getAllCars = async (req, res) => {
   try {
-    const cars = await Car.find({ agent: req.user.id });
+    const cars = await Car.find({ agent: req.user.id }).populate('agent');
     res.status(200).json(cars);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -15,7 +15,7 @@ exports.getAllCars = async (req, res) => {
 // Get single car by ID only if owned by agent
 exports.getCarById = async (req, res) => {
   try {
-    const car = await Car.findOne({ _id: req.params.id, agent: req.user.id });
+    const car = await Car.findOne({ _id: req.params.id, agent: req.user.id }).populate('agent');
     if (!car) return res.status(404).json({ message: 'Car not found or access denied' });
     res.status(200).json(car);
   } catch (error) {
