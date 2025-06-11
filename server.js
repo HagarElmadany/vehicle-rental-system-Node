@@ -32,6 +32,7 @@ app.use('/uploads/driver_licenses', express.static(path.join(__dirname, 'uploads
 app.use('/uploads/id_documents', express.static(path.join(__dirname, 'uploads/id_documents')));
 app.use('/uploads/others', express.static(path.join(__dirname, 'uploads/others')));
 app.use('/uploads/cars', express.static(path.join(__dirname, 'uploads/cars')));
+app.use('/uploads/documents', express.static(path.join(__dirname, 'uploads/documents')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // fallback for others
 
 // Connect to MongoDB (only once!)
