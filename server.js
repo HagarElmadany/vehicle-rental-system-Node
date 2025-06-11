@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/auth');
 const carRoutes = require('./routes/carRoutes');
+const agentRoutes = require('./routes/agentRoutes');
 const path = require('path');
 const cors = require('cors');
 const adminRoutes = require('./routes/adminRoutes');
@@ -50,6 +51,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/cars', carRoutes);
+app.use('/api/agent', agentRoutes);
 app.use('/api/admin',adminRoutes );
 
 // Error handling middleware
