@@ -37,3 +37,24 @@ exports.rejectCar = async (req, res) => {
     res.status(500).json({ message: 'Failed to reject car', error: err.message });
   }
 };
+
+
+// Get all approved cars
+exports.getApprovedCars = async (req, res) => {
+  try {
+    const approvedCars = await Car.find({ approval_status: 'approved' });
+    res.status(200).json(approvedCars);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Get all rejected cars
+exports.getRejectedCars = async (req, res) => {
+  try {
+    const rejectedCars = await Car.find({ approval_status: 'rejected' });
+    res.status(200).json(rejectedCars);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+};
