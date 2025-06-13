@@ -1,7 +1,22 @@
+// all cars with no access
 const Car = require('../models/Car');
 const fs = require('fs');
 const path = require('path');
 
+
+
+// Get only approved cars (public)
+exports.getApprovedCars = async (req, res) => {
+  try {
+    const approvedCars = await Car.find({ approval_status: 'approved' }).populate('agent');
+    res.status(200).json(approvedCars);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+//----------------------------------------------------------------------------------------------
 // Get all cars
 exports.getAllCars = async (req, res) => {
     try {

@@ -3,7 +3,14 @@ const router = express.Router();
 const carController = require('../controllers/carController');
 const upload = require('../middleware/upload');
 
-// Public routes
+
+// Public route: get only approved cars (for the website itself)
+router.get('/approved', carController.getApprovedCars);
+
+
+
+//---------------------------------------------------------------------
+// Public routes // all cars with no access only for test till now
 router.get('/', carController.getAllCars);
 router.get('/:id', carController.getCarById);
 router.post('/', upload.fields([

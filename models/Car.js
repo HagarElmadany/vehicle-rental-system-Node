@@ -27,9 +27,13 @@ const carSchema = new mongoose.Schema({
   expectedReturnDate: { type: Date },
   totalPricePerHour: { type: Number, required: true }, //-
   totalPricePerDay: { type: Number, required: true }, //-
-  documents: [{ type: String}],
-  is_approved: { type: Boolean, default: false },
-  with_driver: { type: Boolean, default: false },  
+  documents: [{ type: String }],
+  approval_status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+  with_driver: { type: Boolean, default: false },
   carPhotos: [{ type: String }],
   agent: {
     type: mongoose.Schema.Types.ObjectId,
