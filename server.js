@@ -6,12 +6,16 @@ const carRoutes = require('./routes/carRoutes');
 const path = require('path');
 const cors = require('cors');
 const adminRoutes = require('./routes/adminRoutes');
+const bookingRoutes = require("./routes/bookingRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 const session = require('express-session');
 const passport = require('passport');
+
 require('./config/passport');
 app.use(session({
   secret: 'any-secret-key', 
@@ -47,10 +51,13 @@ mongoose.connect(process.env.MONGO_URI, {
 app.get('/', (req, res) => {
     res.send('✅ Server is working');
 });
-
+app.use(express.static(path.join(__dirname, "public")));
 app.use('/api/auth', authRoutes);
 app.use('/api/cars', carRoutes);
 app.use('/api/admin',adminRoutes );
+
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
