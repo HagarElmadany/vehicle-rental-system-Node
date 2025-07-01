@@ -25,8 +25,8 @@ exports.bookAndPay = async (req, res) => {
 
     const user = client.user_id;
     const billingName = `${client.first_name} ${client.last_name}`;
-    const billingPhone = client.phone_number || "01234567890";
-    const clientEmail = user?.email || "noemail@example.com";
+    const billingPhone = client.phone_number ;
+    const clientEmail = user?.email ;
 
     if (!mongoose.Types.ObjectId.isValid(carId))
       return res.status(400).json({ error: "Invalid car ID format" });
@@ -34,7 +34,7 @@ exports.bookAndPay = async (req, res) => {
     const car = await Car.findById(carId).select("agent");
     if (!car) return res.status(404).json({ error: "Car not found" });
 
-
+    console.log(car);
     const booking = new Booking({
       clientId: client._id,
       carId,
@@ -47,6 +47,7 @@ exports.bookAndPay = async (req, res) => {
       clientEmail,
       pickupLocation,
       dropoffLocation,
+      with_driver: req.body.with_driver ?? false
     });
 
     await booking.save();
@@ -145,16 +146,39 @@ exports.getAllBookings = async (req, res) => {
 // Cancel a booking (if status is pending)
 exports.cancelBooking = async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id);
+    const booking = await Booking.findById(req.params.id).populate('carId');
     if (!booking) return res.status(404).json({ error: "Booking not found" });
-    if (booking.status !== "pending")
-      return res
-        .status(400)
-        .json({ error: "Only pending bookings can be cancelled" });
+
+    if(booking.status === "cancelled"){
+      return res.status(400).json({ error: "Booking already cancelled" });
+    }
+    else if(booking.status !== "pending") {
+      return res.status(400).json({ error: "Only pending bookings can be cancelled" });
+    }
+
+    const role = req.user.role;
+    const incomingId = req.user.id; 
+
+    let actualUserId = incomingId;
+    console.log("befoooore Incoming ID:", actualUserId);
+    if (role === 'client') {
+      const client = await Client.findOne({user_id : incomingId});
+      if (!client) return res.status(404).json({ error: "Client not found" });
+      actualUserId = client._id.toString();
+    }
+
+    const isClient = role === 'client' && booking.clientId.toString() === actualUserId;
+    const isAdmin = role === 'admin' && booking.clientId;
+    const isAgent = role === 'agent' && booking.carId.agent?.toString() === incomingId;
+
+    if (!isClient && !isAdmin && !isAgent) {
+      return res.status(403).json({ error: "Access denied: not allowed to cancel this booking" });
+    }
 
     booking.status = "cancelled";
     await booking.save();
-    res.json({ message: "Booking cancelled", booking });
+
+    res.json({ message: "Booking cancelled", booking_id:booking._id });
   } catch (err) {
     res.status(500).json({ error: "Server error", details: err.message });
   }
