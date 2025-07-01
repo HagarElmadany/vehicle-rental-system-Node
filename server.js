@@ -3,7 +3,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/auth');
 const carRoutes = require('./routes/carRoutes');
-const agentRoutes = require('./routes/agentRoutes');
+const agentCarsRoutes = require('./routes/agentCarsRoutes');
+const adminCarsRoutes = require('./routes/adminCarsRoutes');
 const path = require('path');
 const cors = require('cors');
 const adminRoutes = require('./routes/adminRoutes');
@@ -55,8 +56,9 @@ app.get('/', (req, res) => {
 app.use(express.static(path.join(__dirname, "public")));
 app.use('/api/auth', authRoutes);
 app.use('/api/cars', carRoutes);
-app.use('/api/agent', agentRoutes);
+app.use('/api/agent/cars', agentCarsRoutes);
 app.use('/api/admin',adminRoutes );
+app.use('/api/admin/cars',adminCarsRoutes);
 
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
