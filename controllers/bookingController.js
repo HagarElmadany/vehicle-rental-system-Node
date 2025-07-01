@@ -2,24 +2,31 @@ const mongoose = require("mongoose");
 const axios = require("axios");
 const Booking = require("../models/Booking");
 const Car = require("../models/Car");
-
+const Client=require("../models/Client");
 exports.bookAndPay = async (req, res) => {
   try {
     const {
-      clientId,
       carId,
       startDate,
       endDate,
       totalCost,
-      billingName,
-      billingPhone,
-      clientEmail,
       pickupLocation,
       dropoffLocation,
     } = req.body;
+    
+    const clientId = req.user.id; // from token
 
     if (!mongoose.Types.ObjectId.isValid(clientId))
       return res.status(400).json({ error: "Invalid client ID format" });
+
+    // Fetch client and populate user info (email)
+    const client = await Client.findOne({ user_id: clientId }).populate('user_id');
+    if (!client) return res.status(404).json({ error: "Client not found" });
+
+    const user = client.user_id;
+    const billingName = `${client.first_name} ${client.last_name}`;
+    const billingPhone = client.phone_number || "01234567890";
+    const clientEmail = user?.email || "noemail@example.com";
 
     if (!mongoose.Types.ObjectId.isValid(carId))
       return res.status(400).json({ error: "Invalid car ID format" });
@@ -27,8 +34,9 @@ exports.bookAndPay = async (req, res) => {
     const car = await Car.findById(carId).select("agent");
     if (!car) return res.status(404).json({ error: "Car not found" });
 
+
     const booking = new Booking({
-      clientId,
+      clientId: client._id,
       carId,
       agent: car.agent,
       startDate,
