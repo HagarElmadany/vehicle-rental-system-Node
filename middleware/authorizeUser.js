@@ -15,6 +15,13 @@ async function auth(req, res, next) {
     // change this line to match your token structure
     req.user = { id: verified.userId, role: verified.role };
 
+
+    // If static admin, skip DB check
+    if (verified.userId === 'admin_static_id' && verified.role === 'admin') {
+      return next();
+    }
+
+    
     // change this line to match your token structure
     const user = await User.findById(verified.userId); 
 
