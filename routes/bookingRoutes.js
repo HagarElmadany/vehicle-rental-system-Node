@@ -3,16 +3,32 @@ const express = require("express");
 const router = express.Router();
 const bookingController = require("../controllers/bookingController");
 
-router.get("/", bookingController.getAllBookings);
-router.get("/:id", bookingController.getBookingById);
+const authorizeUser = require('../middleware/authorizeUser');
+const { isAdmin } = require('../middleware/isAdmin');
+const ensureApprovedAgent = require('../middleware/ensureApprovedAgent');
+
+// Admin-only
+router.get("/", authorizeUser, isAdmin, bookingController.getAllBookings);
+// Authenticated users
+router.get("/:id", authorizeUser, bookingController.getBookingById);
+
 //get booking for specific client
-router.get("/client/:clientId", bookingController.getBookingsByClient);
+// Only logged-in client
+router.get("/client/:clientId", authorizeUser, bookingController.getBookingsByClient);
+
 //get booking for specific agent
-router.get('/agent/:agentId', bookingController.getBookingsByAgent);
+// Only approved agents
+router.get('/agent/:agentId', authorizeUser, ensureApprovedAgent, bookingController.getBookingsByAgent);
+
 //cancel booking that is pending
-router.put("/:id/cancel", bookingController.cancelBooking);
+router.put("/:id/cancel", authorizeUser, bookingController.cancelBooking);
+
 //delete booking if a non paid booking 
-router.delete("/:id", bookingController.deleteBooking);
+// Admin-only
+router.delete("/:id", authorizeUser, isAdmin, bookingController.deleteBooking);
+
 //save booking and initiate payment 
-router.post("/book-and-pay", bookingController.bookAndPay);
+// Only authenticated user (client or agent)
+router.post("/book-and-pay", authorizeUser, bookingController.bookAndPay);
+
 module.exports = router;
