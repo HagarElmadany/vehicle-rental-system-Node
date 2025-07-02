@@ -1,4 +1,5 @@
 const Car = require('../models/Car');
+const Booking = require('../models/Booking');
 const fs = require('fs');
 const path = require('path');
 
@@ -160,5 +161,38 @@ exports.deleteCar = async (req, res) => {
     res.status(200).json({ message: 'Car deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+
+
+// Bookings for agent's cars only
+exports.getBookingsForAgentCars = async (req, res) => {
+  try {
+    // Step 1: Get IDs of all cars owned by the agent
+    const agentCarIds = await Car.find({ agent: req.user.id }).distinct('_id');
+
+    // Step 2: Find bookings that belong to those cars
+    const bookings = await Booking.find({ carId: { $in: agentCarIds } })
+      .populate({
+        path: 'carId',
+        select: 'brand model licensePlate'
+      })
+      .populate({
+        path: 'clientId',
+        select: 'first_name last_name phone_number',
+        populate: {
+          path: 'user_id',
+          model: 'User',
+          select: 'email'
+        }
+      });
+
+    res.status(200).json(bookings);
+  } catch (err) {
+    res.status(500).json({
+      message: 'Failed to fetch bookings for agent cars',
+      error: err.message
+    });
   }
 };
