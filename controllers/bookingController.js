@@ -3,6 +3,7 @@ const axios = require("axios");
 const Booking = require("../models/Booking");
 const Car = require("../models/Car");
 const Client=require("../models/Client");
+
 exports.bookAndPay = async (req, res) => {
   try {
     const {
@@ -158,18 +159,17 @@ exports.cancelBooking = async (req, res) => {
 
     const role = req.user.role;
     const incomingId = req.user.id; 
-
     let actualUserId = incomingId;
-    console.log("befoooore Incoming ID:", actualUserId);
+
     if (role === 'client') {
       const client = await Client.findOne({user_id : incomingId});
       if (!client) return res.status(404).json({ error: "Client not found" });
       actualUserId = client._id.toString();
     }
-
+    
     const isClient = role === 'client' && booking.clientId.toString() === actualUserId;
     const isAdmin = role === 'admin' && booking.clientId;
-    const isAgent = role === 'agent' && booking.carId.agent?.toString() === incomingId;
+    const isAgent = role === 'agent' && booking.agent.equals(actualUserId);
 
     if (!isClient && !isAdmin && !isAgent) {
       return res.status(403).json({ error: "Access denied: not allowed to cancel this booking" });
