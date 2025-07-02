@@ -5,6 +5,7 @@ const { sendConfirmationEmail } = require("../utils/mailer");
 
 //using ngrok to 
 exports.handlePaymobWebhook = async (req, res) => {
+  const payload = JSON.parse(req.rawBody);
   try {
     const data = req.body.obj;
     const bookingId = data.payment_key_claims?.extra?.bookingId;
@@ -29,8 +30,13 @@ exports.handlePaymobWebhook = async (req, res) => {
     });
 
     await payment.save();
-
+    
     const booking = await Booking.findById(bookingId);
+
+     // Update car availability status to "Rented"
+    if (status === "paid" && booking.carId) {
+      await Car.findByIdAndUpdate(booking.carId, { availabilityStatus: "Rented" });
+    }
     await sendConfirmationEmail(booking.clientEmail, bookingId, data.amount_cents / 100);
 
     res.status(200).send("Webhook processed");
@@ -55,9 +61,14 @@ exports.getPaymentStatus = async (req, res) => {
   }
 };
 
-exports.paymentResultPage = (req, res) => {
+exports.redirectPaymentResultPage = (req, res) => {
+   // Reconstruct the query string from Paymob
+  const queryString = new URLSearchParams(req.query).toString();
+  
+  // Redirect to Angular frontend result page
+  const frontendUrl = `${process.env.FRONTEND_RETURN_URL}?${queryString}`;
 
- // here should be a page after callback to show result of payment
+  return res.redirect(frontendUrl);
 
 };
 
