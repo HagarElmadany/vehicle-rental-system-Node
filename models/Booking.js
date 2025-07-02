@@ -35,8 +35,7 @@ const bookingSchema = new mongoose.Schema({
   },
   agent: {
   type: mongoose.Schema.Types.ObjectId,
-  ref: "Agent",
-  required: true,
+  ref: "Agent"
 },
 
   startDate: { 
@@ -96,7 +95,10 @@ const bookingSchema = new mongoose.Schema({
     enum: ["pending", "paid", "cancelled"], 
     default: "pending" 
   },
-
+  with_driver: { 
+    type: Boolean, 
+    default: false 
+  },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

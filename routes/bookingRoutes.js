@@ -18,7 +18,7 @@ router.get("/client/:clientId", authorizeUser, bookingController.getBookingsByCl
 
 //get booking for specific agent
 // Only approved agents
-router.get('/agent/:agentId', authorizeUser, ensureApprovedAgent, bookingController.getBookingsByAgent);
+router.get('/agent/:agentId', authorizeUser, bookingController.getBookingsByAgent);
 
 //cancel booking that is pending
 router.put("/:id/cancel", authorizeUser, bookingController.cancelBooking);
