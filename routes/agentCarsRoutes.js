@@ -10,6 +10,8 @@ const ensureApprovedAgent = require('../middleware/ensureApprovedAgent');
 router.use(authorizeUser);
 router.use(ensureApprovedAgent);
 
+router.get('/bookings', agentCarsController.getBookingsForAgentCars);
+
 router.get('/', agentCarsController.getAllCars);
 router.get('/:id', agentCarsController.getCarById);
 router.post('/', upload.fields([
@@ -20,6 +22,10 @@ router.put('/:id', upload.fields([
     { name: 'carPhotos', maxCount: 5 },
     { name: 'documents', maxCount: 5 }
 ]), agentCarsController.updateCar);
+
+
 router.delete('/:id', agentCarsController.deleteCar);
+
+
 
 module.exports = router;
