@@ -1,5 +1,6 @@
 const Car = require("../models/Car");
 const Agent = require("../models/Agent");
+const Booking = require("../models/Booking");
 
 exports.searchCars = async (req, res) => {
   try {
@@ -27,18 +28,27 @@ exports.searchCars = async (req, res) => {
     const cars = await Car.find({
       agent: { $in: agentIds },
       approval_status: "approved",
+      availabilityStatus: { $in: ["Available", "Rented"] },
     }).populate("agent");
 
-    const availableCars = cars.filter((car) => {
-      if (car.availabilityStatus === "Available") {
-        return true;
-      } else if (car.availabilityStatus === "Rented") {
-        return car.expectedReturnDate < new Date(pickupDate);
-      } else if (car.availabilityStatus === "Under Maintenance") {
-        return false;
+    const availableCars = [];
+
+    for (const car of cars) {
+      // Check for overlapping bookings
+      const overlappingBookings = await Booking.find({
+        car: car._id,
+        $or: [
+          {
+            startDate: { $lt: new Date(returnDate) },
+            endDate: { $gt: new Date(pickupDate) },
+          },
+        ],
+      });
+
+      if (overlappingBookings.length === 0) {
+        availableCars.push(car);
       }
-      return false;
-    });
+    }
 
     if (availableCars.length === 0) {
       return res.status(404).json({ message: "No available cars found" });
