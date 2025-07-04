@@ -78,6 +78,10 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/search", searchCarsRoutes);
 app.use("/api/client/cars", clientRelatedCarsRoutes);
 
+const driverLicenseVerification = require('./routes/driverLicenseVerification');
+app.use("/api", driverLicenseVerification);
+
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err);

@@ -4,6 +4,8 @@ const nodemailer = require('nodemailer');
 const User = require('../models/User');
 const Client = require('../models/Client');
 const Agent = require('../models/Agent');
+const { verifyDriverLicense } = require('../services/verifyLicenseService');
+
 
 require('dotenv').config();
 
@@ -25,6 +27,22 @@ const registerUser = async (req, res, role) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ error: 'Email already exists' });
 
+    // For clients, check and validate license first
+    if (role === 'client') {
+      if (!req.file) {
+        return res.status(400).json({ error: "Driver license image is required." });
+      }
+
+      const licenseResult = await verifyDriverLicense(req.file.path, req.file.mimetype);
+      if (!licenseResult.is_driver_license) {
+        return res.status(400).json({
+          error: "Invalid driver's license uploaded.",
+          extractedInfo: licenseResult
+        });
+      }
+    }
+
+    // All validations passed → now hash password and save user
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -32,6 +50,7 @@ const registerUser = async (req, res, role) => {
     await user.save();
 
     let profile = null;
+
     if (role === 'client') {
       profile = new Client({
         user_id: user._id,
@@ -74,6 +93,7 @@ const registerUser = async (req, res, role) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
 
 const login = async (req, res) => {
   try {
