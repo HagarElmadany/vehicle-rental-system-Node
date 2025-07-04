@@ -17,5 +17,10 @@ router.post(
   authorizeUser,
   clientRelatedCarsController.addCarToWishlist
 );
+router.delete(
+  "/wishlist/:carId",
+  authorizeUser,
+  clientRelatedCarsController.removeCarFromWishlist
+);
 
 module.exports = router;

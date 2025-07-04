@@ -53,8 +53,27 @@ const addCarToWishlist = async (req, res) => {
   }
 };
 
+const removeCarFromWishlist = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const client = await Client.findOne({ user_id: userId });
+    const carId = req.params.carId;
+
+    if (client.wishlist.includes(carId)) {
+      client.wishlist = client.wishlist.filter((id) => id.toString() !== carId);
+      await client.save();
+      res.status(200).json({ message: "Car removed from wishlist" });
+    } else {
+      res.status(400).json({ message: "Car not found in wishlist" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getBookingHistory,
   getClientWishlist,
   addCarToWishlist,
+  removeCarFromWishlist,
 };
