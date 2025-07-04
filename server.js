@@ -11,6 +11,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const searchCarsRoutes = require("./routes/searchCarsRoutes");
+const clientRelatedCarsRoutes = require("./routes/clientRelatedCarsRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -57,10 +58,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // fallbac
 
 // Connect to MongoDB (only once!)
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB error:", err));
 
@@ -78,6 +76,7 @@ app.use("/api/admin/cars", adminCarsRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/search", searchCarsRoutes);
+app.use("/api/client/cars", clientRelatedCarsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
