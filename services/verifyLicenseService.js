@@ -89,13 +89,13 @@ async function verifyDriverLicense(imagePath, mimeType) {
     ) {
       const expiryDate = new Date(parsed.date_of_expiry);
       const today = new Date();
-      const oneYearFromNow = new Date(today);
-      oneYearFromNow.setFullYear(today.getFullYear() + 1);
 
-      if (expiryDate < oneYearFromNow) {
+
+      // If the license is already expired
+      if (expiryDate < today) {
         return {
           is_driver_license: false,
-          reason: "License is expiring in less than 1 year",
+          reason: "License has already expired",
           name_arabic: null,
           name_english: null,
           nationality: null,

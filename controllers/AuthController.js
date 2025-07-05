@@ -257,7 +257,6 @@ const googleCallback = async (req, res) => {
 };
 
 const completeGoogleProfile = async (req, res) => {
-  
   try {
     const userId = req.user.userId;
     const role = req.user.role;
@@ -281,9 +280,20 @@ const completeGoogleProfile = async (req, res) => {
       const client = await Client.findOne({ user_id: userId });
       if (!client) return res.status(404).json({ error: 'Client not found' });
 
+      if (req.file) {
+        const licenseResult = await verifyDriverLicense(req.file.path, req.file.mimetype);
+        if (!licenseResult.is_driver_license) {
+          return res.status(400).json({
+            error: "Invalid driver's license uploaded.",
+            extractedInfo: licenseResult
+          });
+        }
+
+        client.driver_license = req.file.path;
+      }
+
       client.phone_number = phone_number;
       client.location = location;
-      client.driver_license = req.file?.path || client.driver_license;
       client.lat = lat;
       client.lng = lng;
 
@@ -315,9 +325,11 @@ const completeGoogleProfile = async (req, res) => {
     });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Server error' });
   }
 };
+
 
 module.exports = {
   registerUser,
