@@ -71,9 +71,22 @@ const removeCarFromWishlist = async (req, res) => {
   }
 };
 
+const getCarBookings = async (req, res) => {
+  try {
+    const carId = req.params.carId;
+    const bookings = await Booking.find({ carId: carId });
+    res.status(200).json(bookings);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching car bookings: " + error.message });
+  }
+};
+
 module.exports = {
   getBookingHistory,
   getClientWishlist,
   addCarToWishlist,
   removeCarFromWishlist,
+  getCarBookings,
 };

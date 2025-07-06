@@ -22,5 +22,6 @@ router.delete(
   authorizeUser,
   clientRelatedCarsController.removeCarFromWishlist
 );
+router.get("/bookings/:carId", clientRelatedCarsController.getCarBookings);
 
 module.exports = router;
