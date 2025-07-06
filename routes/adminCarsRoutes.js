@@ -28,4 +28,7 @@ router.put('/:id/approve', adminCarsController.approveCar);
 router.put('/:id/reject', adminCarsController.rejectCar);
 
 
+// Get all car bookings
+router.get('/booking', adminCarsController.getCarBookings);
+
 module.exports = router;

@@ -1,4 +1,5 @@
 const Car = require('../models/Car');
+const Booking = require('../models/Booking');
 
 // GET: Get all pending cars
 exports.getPendingCars = async (req, res) => {
@@ -56,5 +57,39 @@ exports.getRejectedCars = async (req, res) => {
     res.status(200).json(rejectedCars);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
+  }
+};
+
+
+// Get all car bookings with full nested data
+exports.getCarBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.find()
+      .populate({
+        path: 'clientId',
+        populate: {
+          path: 'user_id',
+          model: 'User',
+          select: 'email role'
+        },
+        select: 'first_name last_name phone_number location'
+      })
+      .populate({
+        path: 'carId',
+        select: 'brand model year licensePlate type transmission fuel_type seats color rentalRatePerDay rentalRatePerHour'
+      })
+      .populate({
+        path: 'agent',
+        populate: {
+          path: 'user_id',
+          model: 'User',
+          select: 'email role'
+        },
+        select: 'company_name phone_number location'
+      });
+
+    res.status(200).json(bookings);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch bookings', error: err.message });
   }
 };
