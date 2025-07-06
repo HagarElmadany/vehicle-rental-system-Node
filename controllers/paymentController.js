@@ -113,10 +113,19 @@ exports.refundPayment = async (req, res) => {
       amount_cents: Math.round(refundAmount * 100),
     });
 
-    payment.refund_status = refundAmount === payment.amount ? "refunded" : "partial";
+    // Determine refund status based on refund amount
+    if (refundAmount === payment.amount) {
+      payment.refund_status = "refunded";
+    } else if (refundAmount > 0) {
+      payment.refund_status = "partial";
+    } else {
+      payment.refund_status = "rejected";
+    }
+
     payment.refund_amount = refundAmount;
     payment.refunded_at = new Date();
     payment.payment_status = "cancelled";
+
     await payment.save();
 
     booking.status = "cancelled";
