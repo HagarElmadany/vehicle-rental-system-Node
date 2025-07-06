@@ -18,3 +18,20 @@ exports.sendConfirmationEmail = async (to, bookingId, amount) => {
 
   await transporter.sendMail(mailOptions);
 };
+
+
+exports.sendRefundEmail = async (to, bookingId, amount) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USERNAME,
+    to,
+    subject: "Refund Processed",
+    html: `
+      <h3>Your Refund Has Been Processed</h3>
+      <p>Your booking with ID <strong>${bookingId}</strong> has been refunded.</p>
+      <p>Refund Amount: <strong>${amount} EGP</strong></p>
+      <p>Thank you for using our service.</p>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};

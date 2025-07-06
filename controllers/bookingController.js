@@ -14,7 +14,21 @@ exports.bookAndPay = async (req, res) => {
       pickupLocation,
       dropoffLocation,
     } = req.body;
-    
+    const now = new Date();
+    const minStartDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hours ahead
+    if (new Date(startDate) <= now || new Date(endDate) <= now) {
+      return res.status(400).json({ error: "Start and end dates must be in the future." });
+    }
+     if (new Date(endDate) <= new Date(startDate)) {
+      return res.status(400).json({ error: "End date must be after start date." });
+    }
+    if (new Date(startDate) < minStartDate) {
+      return res.status(400).json({
+        error: "Start date must be at least 1 hours from now",
+        earliestAllowedStart: minStartDate.toISOString()
+      });
+    }
+
     const clientId = req.user.id; // from token
 
     if (!mongoose.Types.ObjectId.isValid(clientId))
