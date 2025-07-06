@@ -1,5 +1,7 @@
 const Booking = require("../models/Booking");
 const Payment = require("../models/Payment");
+const axios = require("axios");
+require("dotenv").config();
 const { sendConfirmationEmail } = require("../utils/mailer");
 
 
@@ -33,10 +35,6 @@ exports.handlePaymobWebhook = async (req, res) => {
     
     const booking = await Booking.findById(bookingId);
 
-     // Update car availability status to "Rented"
-    if (status === "paid" && booking.carId) {
-      await Car.findByIdAndUpdate(booking.carId, { availabilityStatus: "Rented" });
-    }
     await sendConfirmationEmail(booking.clientEmail, bookingId, data.amount_cents / 100);
 
     res.status(200).send("Webhook processed");
@@ -71,4 +69,3 @@ exports.redirectPaymentResultPage = (req, res) => {
   return res.redirect(frontendUrl);
 
 };
-

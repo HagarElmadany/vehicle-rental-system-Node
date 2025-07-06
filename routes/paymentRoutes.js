@@ -8,9 +8,11 @@ const verifyPaymobHmac = require("../middleware/verifyPaymobHmac");
 router.post("/webhook/paymob", express.json(),verifyPaymobHmac, paymentController.handlePaymobWebhook);
 
 // Authenticated users can check payment status
-router.get("/payments/:bookingId/status", authorizeUser, paymentController.getPaymentStatus);
+router.get("/:bookingId/status", authorizeUser, paymentController.getPaymentStatus);
 
 // Authenticated users can view payment result
 router.get("/payment/result", authorizeUser, paymentController.redirectPaymentResultPage);
+
+// router.get("/token", paymentController.getToken);
 
 module.exports = router;

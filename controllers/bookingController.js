@@ -23,7 +23,9 @@ exports.bookAndPay = async (req, res) => {
     // Fetch client and populate user info (email)
     const client = await Client.findOne({ user_id: clientId }).populate('user_id');
     if (!client) return res.status(404).json({ error: "Client not found" });
-
+    if(client.verification_status==="banned"){
+      return res.status(404).json({ error: "Client is banned" });
+    }
     const user = client.user_id;
     const billingName = `${client.first_name} ${client.last_name}`;
     const billingPhone = client.phone_number ;
@@ -32,10 +34,31 @@ exports.bookAndPay = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(carId))
       return res.status(400).json({ error: "Invalid car ID format" });
 
-    const car = await Car.findById(carId).select("agent");
+    const car = await Car.findById(carId).select("agent approval_status availabilityStatus expectedReturnDate");
     if (!car) return res.status(404).json({ error: "Car not found" });
+   
+    if (car.approval_status !== "approved") {
+    return res.status(400).json({ error: "Car is not approved for booking" });
+  }
+    if (car.availabilityStatus === "Under Maintenance") {
+    return res.status(400).json({ error: `This car is currently under maintenance. It is expected to return on ${car.expectedReturnDate.toISOString()}.`, expectedReturnDate:`${car.expectedReturnDate.toISOString()}` });
+  }
+    const overlappingBooking = await Booking.findOne({
+      carId,
+      status: "paid", 
+      $or: [
+        {
+          startDate: { $lte: new Date(endDate) },
+          endDate: { $gte: new Date(startDate) }
+        }
+      ]
+    });
 
-    console.log(car);
+    if (overlappingBooking) {
+      return res.status(400).json({
+        error: "Car is already booked during this time"
+      });
+    }
     const booking = new Booking({
       clientId: client._id,
       carId,
@@ -189,8 +212,8 @@ exports.deleteBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ error: "Booking not found" });
-    if (booking.status === "paid")
-      return res.status(400).json({ error: "Cannot delete a paid booking" });
+    if (booking.status === "paid" || booking.status==="completed")
+      return res.status(400).json({ error: "Cannot delete a paid or completed booking" });
 
     await Booking.findByIdAndDelete(req.params.id);
     res.json({ message: "Booking deleted" });
