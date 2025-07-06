@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const paymentController = require("../controllers/paymentController");
 const authorizeUser = require('../middleware/authorizeUser');
-const verifyPaymobHmac = require("../middleware/verifyPaymobHmac");
+// const verifyPaymobHmac = require("../middleware/verifyPaymobHmac");
 
 //save payment and handle callback payment
 router.post("/webhook/paymob", express.json(), paymentController.handlePaymobWebhook);
