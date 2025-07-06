@@ -130,8 +130,21 @@ exports.deleteCar = async (req, res) => {
     const car = await Car.findOne({ _id: req.params.id, agent: req.user.id });
     if (!car) return res.status(404).json({ message: 'Car not found or access denied' });
 
+    // Check if the car is currently rented
     if (car.availabilityStatus === 'Rented') {
       return res.status(400).json({ message: 'Cannot delete a rented car' });
+    }
+
+     // Check if the car has upcoming bookings
+    const now = new Date();
+    const hasFutureBooking = await Booking.exists({
+      carId: car._id,
+      startDate: { $gte: now },
+      status: { $ne: 'cancelled' }  // exclude cancelled bookings
+    });
+
+    if (hasFutureBooking) {
+      return res.status(400).json({ message: 'Cannot delete a car with upcoming reservations' });
     }
 
     const allFiles = [...(car.carPhotos || []), ...(car.documents || [])];
