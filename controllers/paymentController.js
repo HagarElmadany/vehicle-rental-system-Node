@@ -1,11 +1,13 @@
 const Booking = require("../models/Booking");
 const Payment = require("../models/Payment");
+const axios = require("axios");
+require("dotenv").config();
 const { sendConfirmationEmail } = require("../utils/mailer");
-
+const { sendRefundEmail } = require("../utils/mailer");
+const mongoose = require("mongoose");
 
 //using ngrok to 
 exports.handlePaymobWebhook = async (req, res) => {
-  const payload = JSON.parse(req.rawBody);
   try {
     const data = req.body.obj;
     const bookingId = data.payment_key_claims?.extra?.bookingId;
@@ -30,13 +32,8 @@ exports.handlePaymobWebhook = async (req, res) => {
     });
 
     await payment.save();
-    
-    const booking = await Booking.findById(bookingId);
 
-     // Update car availability status to "Rented"
-    if (status === "paid" && booking.carId) {
-      await Car.findByIdAndUpdate(booking.carId, { availabilityStatus: "Rented" });
-    }
+    const booking = await Booking.findById(bookingId);
     await sendConfirmationEmail(booking.clientEmail, bookingId, data.amount_cents / 100);
 
     res.status(200).send("Webhook processed");
@@ -72,3 +69,80 @@ exports.redirectPaymentResultPage = (req, res) => {
 
 };
 
+exports.refundPayment = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+
+    const payment = await Payment.findOne({ booking_id: bookingId }).populate("booking_id");
+
+    if (!payment) return res.status(404).json({ error: "Payment not found for this booking" });
+
+    const booking = payment.booking_id;
+    const now = new Date();
+    const startDate = new Date(booking.startDate);
+
+    if (payment.refund_status === "refunded")
+      return res.status(400).json({ error: "Already refunded" });
+
+    let refundAmount = 0;
+
+    const paidAt = payment.paid_at;
+    const minutesSincePayment = (now - paidAt) / (1000 * 60);
+    const hoursUntilStart = (startDate - now) / (1000 * 60 * 60);
+
+    if (minutesSincePayment <= 30) {
+      refundAmount = payment.amount;
+    } else if (hoursUntilStart >= 24) {
+      refundAmount = payment.amount;
+    } else if (hoursUntilStart >= 12) {
+      refundAmount = payment.amount * 0.75;
+    } else if (hoursUntilStart >= 1) {
+      refundAmount = payment.amount * 0.5;
+    } else{
+      return res.status(400).json({ error: "Refund not allowed within 1 hour of booking start time" });
+    }
+
+    const authResponse = await axios.post("https://accept.paymob.com/api/auth/tokens", {
+      api_key: process.env.PAYMOB_API_KEY,
+    });
+    const token = authResponse.data.token;
+
+    const refundResponse = await axios.post("https://accept.paymob.com/api/acceptance/void_refund/refund", {
+      auth_token: token,
+      transaction_id: payment.transaction_id,
+      amount_cents: Math.round(refundAmount * 100),
+    });
+
+    // Determine refund status based on refund amount
+    if (refundAmount === payment.amount) {
+      payment.refund_status = "refunded";
+    } else if (refundAmount > 0) {
+      payment.refund_status = "partial";
+    } else {
+      payment.refund_status = "rejected";
+    }
+
+    payment.refund_amount = refundAmount;
+    payment.refunded_at = new Date();
+    payment.payment_status = "cancelled";
+
+    await payment.save();
+
+    booking.status = "cancelled";
+    await booking.save();
+
+    // Send refund email to client
+    const clientEmail = booking.clientEmail;
+    await sendRefundEmail(clientEmail, bookingId, refundAmount);
+
+    res.status(200).json({
+      message: "Refund successful",
+      refundAmount,
+      paymob: refundResponse.data
+    });
+
+  } catch (error) {
+    console.error("Refund error:", error);
+    res.status(500).json({ error: error.response?.data || error.message });
+  }
+};
