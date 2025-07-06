@@ -189,7 +189,7 @@ exports.getBookingsForAgentCars = async (req, res) => {
     const bookings = await Booking.find({ carId: { $in: agentCarIds } })
       .populate({
         path: 'carId',
-        select: 'brand model licensePlate'
+        select: 'brand model year licensePlate carPhotos'
       })
       .populate({
         path: 'clientId',
