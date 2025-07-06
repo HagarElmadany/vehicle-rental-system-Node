@@ -37,8 +37,10 @@ exports.bookAndPay = async (req, res) => {
     // Fetch client and populate user info (email)
     const client = await Client.findOne({ user_id: clientId }).populate('user_id');
     if (!client) return res.status(404).json({ error: "Client not found" });
-    if(client.verification_status==="banned"){
-      return res.status(404).json({ error: "Client is banned" });
+    if (client.verification_status !== "approved") {
+      return res.status(403).json({
+        error: `Access denied: your account status is '${client.verification_status}'. Approval is required.`,
+      });
     }
     const user = client.user_id;
     const billingName = `${client.first_name} ${client.last_name}`;
