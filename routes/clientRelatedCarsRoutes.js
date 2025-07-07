@@ -23,5 +23,10 @@ router.delete(
   clientRelatedCarsController.removeCarFromWishlist
 );
 router.get("/bookings/:carId", clientRelatedCarsController.getCarBookings);
+router.get(
+  "/booking-agreement/:bookingId",
+  authorizeUser,
+  clientRelatedCarsController.getBookingWithAgreement
+);
 
 module.exports = router;
