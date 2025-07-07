@@ -14,7 +14,7 @@ const carSchema = new mongoose.Schema({
   // mileage: { type: Number, required: true },
   rentalRatePerDay: { type: Number, default: 40 },
   rentalRatePerHour: { type: Number, default: 10 },
-  availabilityStatus: { type: String, enum: ['Available', 'Rented', 'Under Maintenance'], default: 'Available' }, //-
+  availabilityStatus: { type: String, enum: ['Available', 'Rented'], default: 'Available' }, //-
   rating: { type: Number, min: 0, max: 5, default: 4.5 }, //-
   depositRequired: { type: Number, default: 100 }, //-
   insuranceStatus: { type: String, enum: ['Full Coverage', 'Partial Coverage', 'No Coverage'], default: 'Full Coverage' },

@@ -76,7 +76,7 @@ exports.getCarBookings = async (req, res) => {
       })
       .populate({
         path: 'carId',
-        select: 'brand model year licensePlate type transmission fuel_type seats color rentalRatePerDay rentalRatePerHour'
+        select: 'brand model year licensePlate carPhotos'
       })
       .populate({
         path: 'agent',
