@@ -62,12 +62,13 @@ exports.getPaymentStatus = async (req, res) => {
   }
 };
 
+
 exports.redirectPaymentResultPage = (req, res) => {
    // Reconstruct the query string from Paymob
   const queryString = new URLSearchParams(req.query).toString();
   
   // Redirect to Angular frontend result page
-  const frontendUrl = `${process.env.FRONTEND_RETURN_URL}?${queryString}`;
+  const frontendUrl = `${process.env.FRONTEND_PAYMENT_RESULT_URL}?${queryString}`;
 
   return res.redirect(frontendUrl);
 
