@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const paymentController = require("../controllers/paymentController");
 const authorizeUser = require('../middleware/authorizeUser');
-// const verifyPaymobHmac = require("../middleware/verifyPaymobHmac");
 
 //save payment and handle callback payment
 router.post("/webhook/paymob", express.json(), paymentController.handlePaymobWebhook);
@@ -15,5 +14,6 @@ router.get("/payment/result", authorizeUser, paymentController.redirectPaymentRe
 // router.get("/token", paymentController.getToken);
 router.post("/refund/:bookingId", authorizeUser, paymentController.refundPayment);
 
+router.get('/resume/:bookingId',authorizeUser, paymentController.resumePayment);
 
 module.exports = router;

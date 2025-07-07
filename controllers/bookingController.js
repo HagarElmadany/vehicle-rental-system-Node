@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const axios = require("axios");
 const Booking = require("../models/Booking");
+const TempPaymentSession = require("../models/TempPaymentSession");
 const Car = require("../models/Car");
 const Client=require("../models/Client");
 
@@ -123,7 +124,10 @@ exports.bookAndPay = async (req, res) => {
 
     const paymentKey = paymobRes.data.payment_keys[0].key;
     const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey}`;
-
+    await TempPaymentSession.create({
+      bookingId: booking._id,
+      iframeUrl,
+    });
     // Redirect user to payment iframe page
     // res.redirect(iframeUrl);
 
@@ -189,23 +193,22 @@ exports.cancelBooking = async (req, res) => {
     const booking = await Booking.findById(req.params.id).populate('carId');
     if (!booking) return res.status(404).json({ error: "Booking not found" });
 
-    if(booking.status === "cancelled"){
+    if (booking.status === "cancelled") {
       return res.status(400).json({ error: "Booking already cancelled" });
-    }
-    else if(booking.status !== "pending") {
+    } else if (booking.status !== "pending") {
       return res.status(400).json({ error: "Only pending bookings can be cancelled" });
     }
 
     const role = req.user.role;
-    const incomingId = req.user.id; 
+    const incomingId = req.user.id;
     let actualUserId = incomingId;
 
     if (role === 'client') {
-      const client = await Client.findOne({user_id : incomingId});
+      const client = await Client.findOne({ user_id: incomingId });
       if (!client) return res.status(404).json({ error: "Client not found" });
       actualUserId = client._id.toString();
     }
-    
+
     const isClient = role === 'client' && booking.clientId.toString() === actualUserId;
     const isAdmin = role === 'admin' && booking.clientId;
     const isAgent = role === 'agent' && booking.agent.equals(actualUserId);
@@ -217,7 +220,10 @@ exports.cancelBooking = async (req, res) => {
     booking.status = "cancelled";
     await booking.save();
 
-    res.json({ message: "Booking cancelled", booking_id:booking._id });
+    //  Delete any associated payment session
+    await TempPaymentSession.deleteOne({ bookingId: booking._id });
+
+    res.json({ message: "Booking cancelled", booking_id: booking._id });
   } catch (err) {
     res.status(500).json({ error: "Server error", details: err.message });
   }
@@ -228,10 +234,17 @@ exports.deleteBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ error: "Booking not found" });
-    if (booking.status === "paid" || booking.status==="completed")
-      return res.status(400).json({ error: "Cannot delete a paid or completed booking" });
 
+    if (booking.status === "paid" || booking.status === "completed") {
+      return res.status(400).json({ error: "Cannot delete a paid or completed booking" });
+    }
+
+    // Delete the booking
     await Booking.findByIdAndDelete(req.params.id);
+
+    // Delete associated payment session
+    await TempPaymentSession.deleteOne({ bookingId: booking._id });
+
     res.json({ message: "Booking deleted" });
   } catch (err) {
     res.status(500).json({ error: "Server error", details: err.message });

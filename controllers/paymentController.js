@@ -1,5 +1,6 @@
 const Booking = require("../models/Booking");
 const Payment = require("../models/Payment");
+const TempPaymentSession = require('../models/TempPaymentSession');
 const axios = require("axios");
 require("dotenv").config();
 const { sendConfirmationEmail } = require("../utils/mailer");
@@ -32,7 +33,10 @@ exports.handlePaymobWebhook = async (req, res) => {
     });
 
     await payment.save();
-
+      // Delete temporary session if payment is successful
+    if (status === "paid") {
+      await TempPaymentSession.deleteOne({ bookingId });
+    }
     const booking = await Booking.findById(bookingId);
     await sendConfirmationEmail(booking.clientEmail, bookingId, data.amount_cents / 100);
 
@@ -144,5 +148,26 @@ exports.refundPayment = async (req, res) => {
   } catch (error) {
     console.error("Refund error:", error);
     res.status(500).json({ error: error.response?.data || error.message });
+  }
+};
+
+
+exports.resumePayment = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+
+    if (!bookingId || !mongoose.Types.ObjectId.isValid(bookingId)) {
+      return res.status(400).json({ error: "Invalid or missing booking ID" });
+    }
+
+    const session = await TempPaymentSession.findOne({ bookingId });
+
+    if (!session) {
+      return res.status(404).json({ error: "Payment session not found or expired" });
+    }
+
+    return res.status(200).json({ iframeUrl: session.iframeUrl });
+  } catch (err) {
+    return res.status(500).json({ error: "Server error", message: err.message });
   }
 };
