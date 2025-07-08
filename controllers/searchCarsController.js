@@ -13,17 +13,23 @@ exports.searchCars = async (req, res) => {
     }
 
     const agents = await Agent.find({
-      location: pickupLocation,
       verification_status: "approved",
     });
 
-    if (agents.length === 0) {
+    const filteredAgents = agents.filter(
+      (agent) =>
+        agent.location &&
+        agent.location.trim().toLowerCase() ===
+          pickupLocation.trim().toLowerCase()
+    );
+
+    if (filteredAgents.length === 0) {
       return res
         .status(404)
         .json({ message: "No approved agents found in this location" });
     }
 
-    const agentIds = agents.map((agent) => agent._id);
+    const agentIds = filteredAgents.map((agent) => agent._id);
 
     const cars = await Car.find({
       agent: { $in: agentIds },
@@ -33,19 +39,19 @@ exports.searchCars = async (req, res) => {
 
     const availableCars = [];
 
+    const reqStart = new Date(pickupDate);
+    const reqEnd = new Date(returnDate);
+
     for (const car of cars) {
-      // Check for overlapping bookings
-      const overlappingBookings = await Booking.find({
-        car: car._id,
-        $or: [
-          {
-            startDate: { $lt: new Date(returnDate) },
-            endDate: { $gt: new Date(pickupDate) },
-          },
-        ],
+      const bookings = await Booking.find({ carId: car._id });
+
+      const hasOverlap = bookings.some((booking) => {
+        const bookingStart = new Date(booking.startDate);
+        const bookingEnd = new Date(booking.endDate);
+        return bookingStart < reqEnd && bookingEnd > reqStart;
       });
 
-      if (overlappingBookings.length === 0) {
+      if (!hasOverlap) {
         availableCars.push(car);
       }
     }

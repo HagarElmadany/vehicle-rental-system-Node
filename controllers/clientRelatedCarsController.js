@@ -1,6 +1,7 @@
 const Booking = require("../models/Booking");
 const Client = require("../models/Client");
 const Car = require("../models/Car"); // Import the Car model
+const Agreement = require("../models/Agreement");
 
 const getBookingHistory = async (req, res) => {
   const userId = req.user.id;
@@ -83,10 +84,46 @@ const getCarBookings = async (req, res) => {
   }
 };
 
+const getBookingWithAgreement = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const userId = req.user.id;
+    const client = await Client.findOne({ user_id: userId });
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      clientId: client._id,
+    })
+      .populate("carId")
+      .populate("agent");
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    const agreement = await Agreement.findOne({ bookingId: booking._id });
+
+    res.status(200).json({
+      booking,
+      agreement: agreement
+        ? {
+            id: agreement._id,
+            status: agreement.status,
+            documentUrl: agreement.documentUrl,
+            signedAt: agreement.signedAt,
+          }
+        : null,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getBookingHistory,
   getClientWishlist,
   addCarToWishlist,
   removeCarFromWishlist,
   getCarBookings,
+  getBookingWithAgreement,
 };
