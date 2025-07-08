@@ -113,10 +113,38 @@ exports.updateCar = async (req, res) => {
       ...(documents.length > 0 && { documents }),
     };
 
+    // Validate and compare availabilityStatus
+    const oldStatus = car.availabilityStatus;
+    const newStatus = req.body.availabilityStatus;
+
+    if (newStatus && !['Available', 'Rented'].includes(newStatus)) {
+      return res.status(400).json({ message: 'Invalid availability status. Only "Available" or "Rented" are allowed.' });
+    }
+
     const updatedCar = await Car.findByIdAndUpdate(car._id, updatedData, {
       new: true,
       runValidators: true
     });
+
+    // If availability status changed, update related booking(s)
+    if (newStatus && oldStatus !== newStatus) {
+      const today = new Date();
+
+      today.setHours(today.getHours() + 3); // Adjust to local time zone
+      if (newStatus === "Available") {
+        const lastBooking = await Booking.findOne({
+          carId: car._id,
+          status: { $ne: "completed" },
+          endDate: { $lte: today }
+        }).sort({ endDate: -1 });
+
+        if (lastBooking) {
+          lastBooking.status = "completed";
+          await lastBooking.save();
+          console.log("Booking marked as completed");
+        }
+      }
+    }
 
     res.status(200).json(updatedCar);
   } catch (error) {
@@ -130,8 +158,21 @@ exports.deleteCar = async (req, res) => {
     const car = await Car.findOne({ _id: req.params.id, agent: req.user.id });
     if (!car) return res.status(404).json({ message: 'Car not found or access denied' });
 
+    // Check if the car is currently rented
     if (car.availabilityStatus === 'Rented') {
       return res.status(400).json({ message: 'Cannot delete a rented car' });
+    }
+
+     // Check if the car has upcoming bookings
+    const now = new Date();
+    const hasFutureBooking = await Booking.exists({
+      carId: car._id,
+      startDate: { $gte: now },
+      status: { $ne: 'cancelled' }  // exclude cancelled bookings
+    });
+
+    if (hasFutureBooking) {
+      return res.status(400).json({ message: 'Cannot delete a car with upcoming reservations' });
     }
 
     const allFiles = [...(car.carPhotos || []), ...(car.documents || [])];
@@ -176,7 +217,7 @@ exports.getBookingsForAgentCars = async (req, res) => {
     const bookings = await Booking.find({ carId: { $in: agentCarIds } })
       .populate({
         path: 'carId',
-        select: 'brand model licensePlate'
+        select: 'brand model year licensePlate carPhotos'
       })
       .populate({
         path: 'clientId',
