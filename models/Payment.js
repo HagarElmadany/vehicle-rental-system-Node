@@ -6,7 +6,7 @@ const paymentSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   payment_method: { type: String },
   currency: { type: String },
-  payment_status: { type: String ,enum: ["pending", "paid", "cancelled", "failed"]},
+  payment_status: { type: String ,enum: ["pending", "paid", "cancelled", "failed","rejected","timeout"]},
   transaction_id: { type: String },
   paid_at: { type: Date },
    refund_status: {

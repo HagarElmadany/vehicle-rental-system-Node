@@ -104,6 +104,9 @@ exports.bookAndPay = async (req, res) => {
           first_name: billingName.split(" ")[0],
           last_name: billingName.split(" ")[1] || "Client",
           phone_number: billingPhone,
+          extras: {
+            bookingId: booking._id.toString()
+          }
         },
         customer: {
           first_name: billingName.split(" ")[0],
