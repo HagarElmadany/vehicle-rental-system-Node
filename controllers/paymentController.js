@@ -50,25 +50,39 @@ exports.getPaymentStatus = async (req, res) => {
   try {
     const { bookingId } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(bookingId))
+    if (!mongoose.Types.ObjectId.isValid(bookingId)) {
       return res.status(400).json({ error: "Invalid booking ID format" });
+    }
 
+    const payment = await Payment.findOne({ booking_id: bookingId });
     const booking = await Booking.findById(bookingId);
-    if (!booking) return res.status(404).json({ error: "Booking not found" });
 
-    res.json({ status: booking.status });
+    if (!payment || !booking) {
+      return res.status(404).json({ error: "Booking or Payment not found" });
+    }
+    
+    return res.json({
+      status: payment.payment_status,
+      bookingStatus: booking.status
+    });
+
   } catch (err) {
-    res.status(500).json({ error: "Server error", message: err.message });
+    return res.status(500).json({ error: "Server error", message: err.message });
   }
 };
 
 
-exports.redirectPaymentResultPage = (req, res) => {
-   // Reconstruct the query string from Paymob
-  const queryString = new URLSearchParams(req.query).toString();
-  
-  // Redirect to Angular frontend result page
-  const frontendUrl = `${process.env.FRONTEND_PAYMENT_RESULT_URL}?${queryString}`;
+exports.redirectPaymentResultPage =async (req, res) => {
+ const transactionId = req.query.id;
+
+  const payment = await Payment.findOne({ transaction_id: transactionId });
+
+  if (!payment) {
+    return res.status(404).send("Payment not found");
+  }
+
+  const bookingId = payment.booking_id.toString();
+  const frontendUrl = `${process.env.FRONTEND_PAYMENT_RESULT_URL}?bookingId=${bookingId}`;
 
   return res.redirect(frontendUrl);
 
@@ -147,7 +161,7 @@ exports.refundPayment = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Refund error:", error);
+
     res.status(500).json({ error: error.response?.data || error.message });
   }
 };

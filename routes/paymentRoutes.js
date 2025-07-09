@@ -9,7 +9,7 @@ router.post("/webhook/paymob", express.json(), paymentController.handlePaymobWeb
 router.get("/:bookingId/status", authorizeUser, paymentController.getPaymentStatus);
 
 // Authenticated users can view payment result
-router.get("/payment/result", authorizeUser, paymentController.redirectPaymentResultPage);
+router.get("/payment/result",  paymentController.redirectPaymentResultPage);
 
 // router.get("/token", paymentController.getToken);
 router.post("/refund/:bookingId", authorizeUser, paymentController.refundPayment);
