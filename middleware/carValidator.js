@@ -6,7 +6,7 @@ const allowedFuelTypes = ['Petrol', 'Diesel', 'Electric', 'Hybrid'];
 const allowedFuelLevels = ['Empty', 'Quarter', 'Half', 'Three-Quarters', 'Full'];
 const allowedStatuses = ['Available', 'Rented'];
 
-exports.carValidationRules = [
+const carValidationRules = [
     body('brand').isString().notEmpty().withMessage('Brand is required'),
     body('model').isString().notEmpty().withMessage('Model is required'),
     body('type').isString().notEmpty().withMessage('Type is required'),
@@ -37,3 +37,24 @@ exports.carValidationRules = [
     body('availabilityStatus').optional().isIn(allowedStatuses).withMessage('Invalid availability status'),
     body('fuelLevel').optional().isIn(allowedFuelLevels).withMessage('Invalid fuel level'),
 ];
+
+
+const updateCarValidationRules = [
+    body('brand').optional().isString().notEmpty().withMessage('Brand is required'),
+    body('model').optional().isString().notEmpty().withMessage('Model is required'),
+    body('type').optional().isString().notEmpty().withMessage('Type is required'),
+    body('licensePlate').optional().isString().notEmpty().withMessage('License plate is required'),
+    body('transmission').optional().isIn(['Automatic', 'Manual']).withMessage('Invalid transmission'),
+    body('fuelType').optional().isIn(['Petrol', 'Diesel', 'Electric']).withMessage('Invalid fuel type'),
+    body('seats').optional().isInt({ min: 2, max: 8 }).withMessage('Seats must be between 2 and 8'),
+    body('year').optional().isInt({ min: 1990, max: new Date().getFullYear() + 1 }).withMessage('Invalid year'),
+    body('color').optional().isString().notEmpty().withMessage('Color is required'),
+    body('odometer').optional().isFloat({ min: 0 }).withMessage('Odometer reading must be >= 0'),
+    body('pricePerHour').optional().isFloat({ min: 0 }).withMessage('Total hourly price must be >= 0'),
+    body('pricePerDay').optional().isFloat({ min: 0 }).withMessage('Total daily price must be >= 0'),
+];
+
+module.exports = {
+    carValidationRules,
+    updateCarValidationRules
+};
