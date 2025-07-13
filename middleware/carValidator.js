@@ -5,6 +5,7 @@ const allowedTransmissions = ['Automatic', 'Manual'];
 const allowedFuelTypes = ['Petrol', 'Diesel', 'Electric', 'Hybrid'];
 const allowedFuelLevels = ['Empty', 'Quarter', 'Half', 'Three-Quarters', 'Full'];
 const allowedStatuses = ['Available', 'Rented'];
+const allowedCategories = ['Wedding', 'Day Use', 'Trip', 'Business', 'Airport Pickup', 'Economy', 'Other'];
 
 const carValidationRules = [
     body('brand').isString().notEmpty().withMessage('Brand is required'),
@@ -36,6 +37,7 @@ const carValidationRules = [
     body('rentalRatePerDay').optional().isFloat({ min: 0 }),
     body('availabilityStatus').optional().isIn(allowedStatuses).withMessage('Invalid availability status'),
     body('fuelLevel').optional().isIn(allowedFuelLevels).withMessage('Invalid fuel level'),
+    body('category').isIn(allowedCategories).withMessage('Invalid category'),
 ];
 
 
@@ -52,6 +54,7 @@ const updateCarValidationRules = [
     body('odometer').optional().isFloat({ min: 0 }).withMessage('Odometer reading must be >= 0'),
     body('pricePerHour').optional().isFloat({ min: 0 }).withMessage('Total hourly price must be >= 0'),
     body('pricePerDay').optional().isFloat({ min: 0 }).withMessage('Total daily price must be >= 0'),
+    body('category').optional().isIn(allowedCategories).withMessage('Invalid category'),
 ];
 
 module.exports = {

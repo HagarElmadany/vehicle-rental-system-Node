@@ -40,6 +40,12 @@ const carSchema = new mongoose.Schema({
     ref: 'Agent',
     required: true
   },
+  category: {
+    type: String,
+    enum: ['Wedding', 'Day Use', 'Trip', 'Business', 'Airport Pickup', 'Economy', 'Other'],
+    default: 'Day Use',
+    required: true
+  },
 }, { timestamps: true });
 
 const Car = mongoose.model('Car', carSchema);
