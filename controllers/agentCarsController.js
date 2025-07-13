@@ -2,6 +2,7 @@ const Car = require('../models/Car');
 const Booking = require('../models/Booking');
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config();
 
 // Get all cars owned by agent
 exports.getAllCars = async (req, res) => {
@@ -30,20 +31,20 @@ exports.createCar = async (req, res) => {
     // Prevent agent from setting approval_status
     delete req.body.approval_status;
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    // const baseUrl = `${req.protocol}://${req.get('host')}`;
     const carPhotos = [];
     const documents = [];
 
     if (req.files) {
       if (req.files.carPhotos) {
         req.files.carPhotos.forEach(file => {
-          carPhotos.push(`${baseUrl}/uploads/cars/${file.filename}`);
+          carPhotos.push(`${process.env.BASE_URL}/uploads/cars/${file.filename}`);
         });
       }
 
       if (req.files.documents) {
         req.files.documents.forEach(file => {
-          documents.push(`${baseUrl}/uploads/documents/${file.filename}`);
+          documents.push(`${process.env.BASE_URL}/uploads/documents/${file.filename}`);
         });
       }
     }
@@ -73,7 +74,7 @@ exports.updateCar = async (req, res) => {
     // Prevent agent from modifying approval_status
     delete req.body.approval_status;
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    // const baseUrl = `${req.protocol}://${req.get('host')}`;
     const carPhotos = [];
     const documents = [];
 
@@ -96,13 +97,13 @@ exports.updateCar = async (req, res) => {
 
       if (req.files.carPhotos) {
         req.files.carPhotos.forEach(file => {
-          carPhotos.push(`${baseUrl}/uploads/cars/${file.filename}`);
+          carPhotos.push(`${process.env.BASE_URL}/uploads/cars/${file.filename}`);
         });
       }
 
       if (req.files.documents) {
         req.files.documents.forEach(file => {
-          documents.push(`${baseUrl}/uploads/documents/${file.filename}`);
+          documents.push(`${process.env.BASE_URL}/uploads/documents/${file.filename}`);
         });
       }
     }

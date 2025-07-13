@@ -28,7 +28,7 @@ exports.approveCar = async (req, res) => {
 // PUT: Reject car
 exports.rejectCar = async (req, res) => {
   try {
-    const car = await Car.findById(req.params.id);
+    const car = await Car.findById(req.params.id).populate('agent');;
     if (!car) return res.status(404).json({ message: 'Car not found' });
 
     car.approval_status = 'rejected';
@@ -43,7 +43,7 @@ exports.rejectCar = async (req, res) => {
 // Get all approved cars
 exports.getApprovedCars = async (req, res) => {
   try {
-    const approvedCars = await Car.find({ approval_status: 'approved' });
+    const approvedCars = await Car.find({ approval_status: 'approved' }).populate('agent');;
     res.status(200).json(approvedCars);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -53,7 +53,7 @@ exports.getApprovedCars = async (req, res) => {
 // Get all rejected cars
 exports.getRejectedCars = async (req, res) => {
   try {
-    const rejectedCars = await Car.find({ approval_status: 'rejected' });
+    const rejectedCars = await Car.find({ approval_status: 'rejected' }).populate('agent');;
     res.status(200).json(rejectedCars);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
