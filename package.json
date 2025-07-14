@@ -7,6 +7,7 @@
     "start": "node .",
     "dev": "nodemon .",
     "debug": "node --inspect .",
+    "build": "npm install",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -32,6 +33,8 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "pdfkit": "^0.17.1",
-    "signature_pad": "^5.0.10"
+    "signature_pad": "^5.0.10",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   }
 }

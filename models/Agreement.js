@@ -30,6 +30,11 @@ const agreementSchema = new mongoose.Schema(
       enum: ["pending", "signed", "expired"],
       default: "pending",
     },
+    language: {
+      type: String,
+      enum: ["en", "ar"],
+      default: "en",
+    },
     generatedAt: {
       type: Date,
       default: Date.now,

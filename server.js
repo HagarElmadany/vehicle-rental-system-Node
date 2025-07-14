@@ -30,6 +30,10 @@ app.use(
   })
 );
 
+const { swaggerUi, swaggerSpec } = require("./swagger");
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 // Initialize Passport and session
 app.use(passport.initialize());
 app.use(passport.session());

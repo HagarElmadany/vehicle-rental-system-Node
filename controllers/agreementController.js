@@ -9,7 +9,10 @@ const fs = require("fs");
 exports.generateAgreement = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const { signature } = req.body; // Base64 encoded signature
+    const { signature, language = "en" } = req.body; // Default to English if not specified
+
+    console.log("🔄 Generating agreement for booking:", bookingId);
+    console.log("🌐 Language:", language);
 
     const booking = await Booking.findById(bookingId)
       .populate("carId")
@@ -19,8 +22,12 @@ exports.generateAgreement = async (req, res) => {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    // Generate PDF
-    const pdfResult = await generateRentalAgreementPDF(booking, signature);
+    // Generate PDF with language support
+    const pdfResult = await generateRentalAgreementPDF(
+      booking,
+      signature,
+      language
+    );
 
     // Save agreement record
     const agreement = new Agreement({
@@ -31,6 +38,7 @@ exports.generateAgreement = async (req, res) => {
       signatureData: signature,
       status: signature ? "signed" : "pending",
       generatedAt: new Date(),
+      language: language, // Store the language used
     });
 
     await agreement.save();
@@ -41,6 +49,7 @@ exports.generateAgreement = async (req, res) => {
         id: agreement._id,
         documentUrl: pdfResult.url,
         status: agreement.status,
+        language: language,
       },
     });
   } catch (error) {
@@ -56,7 +65,7 @@ exports.generateAgreement = async (req, res) => {
 exports.signAgreement = async (req, res) => {
   try {
     const { agreementId } = req.params;
-    const { signature } = req.body;
+    const { signature, language = "en" } = req.body;
 
     if (!signature) {
       return res.status(400).json({ message: "Signature is required" });
@@ -71,10 +80,14 @@ exports.signAgreement = async (req, res) => {
       return res.status(404).json({ message: "Agreement not found" });
     }
 
-    // Regenerate PDF with signature
+    // Use existing language or new language if provided
+    const agreementLanguage = language || agreement.language || "en";
+
+    // Regenerate PDF with signature and language
     const pdfResult = await generateRentalAgreementPDF(
       agreement.bookingId,
-      signature
+      signature,
+      agreementLanguage
     );
 
     // Update agreement
@@ -82,6 +95,7 @@ exports.signAgreement = async (req, res) => {
     agreement.status = "signed";
     agreement.signedAt = new Date();
     agreement.documentUrl = pdfResult.url;
+    agreement.language = agreementLanguage;
 
     await agreement.save();
 
@@ -92,6 +106,7 @@ exports.signAgreement = async (req, res) => {
         documentUrl: pdfResult.url,
         status: agreement.status,
         signedAt: agreement.signedAt,
+        language: agreementLanguage,
       },
     });
   } catch (error) {
