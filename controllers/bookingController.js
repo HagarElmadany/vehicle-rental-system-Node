@@ -60,22 +60,29 @@ exports.bookAndPay = async (req, res) => {
     if (car.availabilityStatus === "Under Maintenance") {
     return res.status(400).json({ error: `This car is currently under maintenance. It is expected to return on ${car.expectedReturnDate.toISOString()}.`, expectedReturnDate:`${car.expectedReturnDate.toISOString()}` });
   }
-    const overlappingBooking = await Booking.findOne({
-      carId,
-      status: "paid", 
-      $or: [
-        {
-          startDate: { $lte: new Date(endDate) },
-          endDate: { $gte: new Date(startDate) }
-        }
-      ]
-    });
+    const existingBookings = await Booking.find({
+  carId,
+  status: "paid"
+});
 
-    if (overlappingBooking) {
-      return res.status(400).json({
-        error: "Car is already booked during this time"
-      });
-    }
+const requestedStart = new Date(startDate);
+const requestedEnd = new Date(endDate);
+
+const overlappingBooking = existingBookings.find(booking => {
+  const bookingStart = new Date(booking.startDate);
+  const bookingEnd = new Date(booking.endDate);
+
+  // Check if the date ranges overlap
+  return (
+    requestedStart <= bookingEnd && requestedEnd >= bookingStart
+  );
+});
+
+if (overlappingBooking) {
+  return res.status(400).json({
+    error: "Car is already booked during this time"
+  });
+}
     const booking = new Booking({
       clientId: client._id,
       carId,

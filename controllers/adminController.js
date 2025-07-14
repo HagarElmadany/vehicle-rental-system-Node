@@ -97,6 +97,50 @@ exports.suspendClientForMonth = async (req, res) => {
   }
 };
 
+// Unban Client
+exports.unbanClient = async (req, res) => {
+  const { id } = req.params; 
+
+  try {
+    const client = await Client.findById(id);
+    if (!client) return res.status(404).json({ error: "Client not found" });
+
+    if (client.verification_status !== "banned") {
+      return res.status(400).json({ error: "Client is not banned" });
+    }
+
+    client.verification_status = "approved"; 
+    await client.save();
+
+    res.json({ message: "Client has been unbanned", client });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Unsuspend Client
+exports.unsuspendClient = async (req, res) => {
+  const { id } = req.params; 
+
+  try {
+    const client = await Client.findById(id);
+    if (!client) return res.status(404).json({ error: "Client not found" });
+
+    if (client.verification_status !== "suspended") {
+      return res.status(400).json({ error: "Client is not suspended" });
+    }
+
+    client.verification_status = "approved";
+    client.suspended_until = null;
+    await client.save();
+
+    res.json({ message: "Client has been unsuspended", client });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
 
 // Ban an agent from login
 exports.banAgent = async (req, res) => {
@@ -131,6 +175,47 @@ exports.suspendAgentForMonth = async (req, res) => {
   }
 };
 
+// Unban an agent
+exports.unbanAgent = async (req, res) => {
+  try {
+    const agent = await Agent.findById(req.params.id);
+    if (!agent) return res.status(404).json({ message: 'Agent not found' });
+
+    if (agent.verification_status !== 'banned') {
+      return res.status(400).json({ message: 'Agent is not currently banned' });
+    }
+
+    agent.verification_status = 'approved'; // or 'pending'
+    await agent.save();
+
+    await User.findByIdAndUpdate(agent.user_id, { banned: false });
+
+    res.json({ message: 'Agent has been unbanned', agent });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// Unsuspend an agent
+exports.unsuspendAgent = async (req, res) => {
+  try {
+    const agent = await Agent.findById(req.params.id);
+    if (!agent) return res.status(404).json({ message: 'Agent not found' });
+
+    if (agent.verification_status !== 'suspended') {
+      return res.status(400).json({ message: 'Agent is not currently suspended' });
+    }
+
+    agent.verification_status = 'approved'; // or 'pending'
+    agent.suspended_until = null;
+    await agent.save();
+
+    res.json({ message: 'Agent has been unsuspended', agent });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 exports.getAllClients = async (req, res) => {
   try {
     const clients = await Client.find();
@@ -142,7 +227,12 @@ exports.getAllClients = async (req, res) => {
 
 exports.getAllAgents = async (req, res) => {
   try {
-    const agents = await Agent.find();
+    const filter = {};
+    if (req.query.status) {
+      filter.verification_status = req.query.status;
+    }
+
+    const agents = await Agent.find(filter);
     res.json(agents);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
