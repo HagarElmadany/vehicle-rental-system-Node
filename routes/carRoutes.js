@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const authorizeUser = require('../middleware/authorizeUser');
 const carController = require('../controllers/carController');
 const upload = require('../middleware/upload');
 
@@ -7,7 +8,7 @@ const upload = require('../middleware/upload');
 // Public route: get only approved cars (for the website itself)
 router.get('/approved', carController.getApprovedCars);
 
-
+router.patch('/:id/availability', authorizeUser, carController.updateAvailabilityStatus);
 
 //---------------------------------------------------------------------
 // Public routes // all cars with no access only for test till now

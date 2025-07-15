@@ -31,4 +31,13 @@ router.delete("/:id", authorizeUser, isAdmin, bookingController.deleteBooking);
 // Only authenticated user (client or agent)
 router.post("/book-and-pay", authorizeUser, bookingController.bookAndPay);
 
+// PUT /api/bookings/:id/complete
+router.put('/:id/complete', authorizeUser, bookingController.completeBooking);
+
+router.put('/:id/return-car', authorizeUser, bookingController.markAsReturned);
+
+// PATCH /api/bookings/:id/return-complete
+router.patch('/:id/return-complete', authorizeUser, bookingController.returnAndComplete);
+
+router.patch('/:id/mark-rented', authorizeUser, bookingController.markAsRented);
 module.exports = router;

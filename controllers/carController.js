@@ -184,3 +184,17 @@ exports.deleteCar = async (req, res) => {
     }
 };
 
+exports.updateAvailabilityStatus = async (req, res) => {
+  const { status } = req.body;
+  if (!['Available', 'Rented'].includes(status)) {
+    return res.status(400).json({ message: 'Invalid status' });
+  }
+
+  const car = await Car.findById(req.params.id);
+  if (!car) return res.status(404).json({ message: 'Car not found' });
+
+  car.availabilityStatus = status;
+  await car.save();
+
+  res.json({ message: `Car marked as ${status}` });
+};

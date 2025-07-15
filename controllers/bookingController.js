@@ -197,48 +197,6 @@ exports.getAllBookings = async (req, res) => {
   }
 };
 
-// Cancel a booking (if status is pending)
-exports.cancelBooking = async (req, res) => {
-  try {
-    const booking = await Booking.findById(req.params.id).populate('carId');
-    if (!booking) return res.status(404).json({ error: "Booking not found" });
-
-    if (booking.status === "cancelled") {
-      return res.status(400).json({ error: "Booking already cancelled" });
-    } else if (booking.status !== "pending") {
-      return res.status(400).json({ error: "Only pending bookings can be cancelled" });
-    }
-
-    const role = req.user.role;
-    const incomingId = req.user.id;
-    let actualUserId = incomingId;
-
-    if (role === 'client') {
-      const client = await Client.findOne({ user_id: incomingId });
-      if (!client) return res.status(404).json({ error: "Client not found" });
-      actualUserId = client._id.toString();
-    }
-
-    const isClient = role === 'client' && booking.clientId.toString() === actualUserId;
-    const isAdmin = role === 'admin' && booking.clientId;
-    const isAgent = role === 'agent' && booking.agent.equals(actualUserId);
-
-    if (!isClient && !isAdmin && !isAgent) {
-      return res.status(403).json({ error: "Access denied: not allowed to cancel this booking" });
-    }
-
-    booking.status = "cancelled";
-    await booking.save();
-
-    //  Delete any associated payment session
-    await TempPaymentSession.deleteOne({ bookingId: booking._id });
-
-    res.json({ message: "Booking cancelled", booking_id: booking._id });
-  } catch (err) {
-    res.status(500).json({ error: "Server error", details: err.message });
-  }
-};
-
 // Delete a booking (if not paid)
 exports.deleteBooking = async (req, res) => {
   try {
@@ -280,4 +238,102 @@ exports.getBookingsByAgent = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Server error", details: err.message });
   }
+};
+
+exports.completeBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+    const now = new Date();
+    if (new Date(booking.startDate) > now || new Date(booking.endDate) < now) {
+      return res.status(400).json({ message: 'Booking is not ongoing and cannot be completed' });
+    }
+
+    booking.status = 'completed';
+    await booking.save();
+    res.status(200).json({ message: 'Booking marked as completed', booking });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to complete booking', error: err.message });
+  }
+};
+
+  // PUT /api/bookings/:id/return-car
+exports.markAsReturned= async (req, res) => {
+  const booking = await Booking.findById(req.params.id);
+  if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+  const car = await Car.findById(booking.carId);
+  if (car) {
+    car.availabilityStatus = 'Available';
+    car.expectedReturnDate = null;
+    await car.save();
+  }
+
+  res.json({ message: 'Car marked as returned' });
+};
+
+// PATCH /api/bookings/:id/return-complete
+exports.returnAndComplete = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id).populate('carId');
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+    const car = booking.carId;
+    const now = new Date();
+
+    // Ensure the booking is ongoing
+    if (new Date(booking.startDate) > now || new Date(booking.endDate) < now) {
+      return res.status(400).json({ message: 'Booking is not ongoing and cannot be completed' });
+    }
+
+    // Ensure the car is currently rented
+    if (car.availabilityStatus !== 'Rented') {
+      return res.status(400).json({ message: 'Car is not marked as rented' });
+    }
+
+    // 1. Mark car as returned
+    car.availabilityStatus = 'Available';
+    car.expectedReturnDate = null;
+    await car.save();
+
+    // 2. Mark booking as completed
+    booking.status = 'completed';
+    await booking.save();
+
+    res.status(200).json({ message: 'Car returned and booking completed', booking });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to return and complete booking', error: err.message });
+  }
+};
+exports.markAsRented = async (req, res) => {
+  const booking = await Booking.findById(req.params.id);
+  if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+  const car = await Car.findById(booking.carId);
+  if (!car) return res.status(404).json({ message: 'Car not found' });
+
+  if (car.availabilityStatus !== 'Available') {
+    return res.status(400).json({ message: 'Car is not available' });
+  }
+
+  car.availabilityStatus = 'Rented';
+  await car.save();
+
+  res.json({ message: 'Car marked as rented' });
+};
+
+exports.cancelBooking = async (req, res) => {
+  const booking = await Booking.findById(req.params.id);
+  if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+  const now = new Date();
+  if (new Date(booking.startDate) <= now) {
+    return res.status(400).json({ message: 'Cannot cancel after start date' });
+  }
+
+  booking.status = 'cancelled';
+  await booking.save();
+
+  res.json({ message: 'Booking cancelled' });
 };
